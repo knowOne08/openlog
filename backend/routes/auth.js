@@ -1,7 +1,7 @@
 // routes/auth.js
-const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
-const router = express.Router();
+import { Router } from 'express';
+import { createClient } from '@supabase/supabase-js';
+const router = Router();
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -555,4 +555,4 @@ router.get('/profile', authenticateToken, async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

@@ -1,11 +1,11 @@
 // server.js
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const morgan = require('morgan');
-const { testConnection } = require('./config/db');
+import 'dotenv/config';
+import express, { json, urlencoded } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import morgan from 'morgan';
+import { testConnection } from './config/db.js';
 
 const app = express();
 
@@ -52,8 +52,8 @@ app.use(helmet()); // Security headers
 app.use(cors(corsOptions)); // CORS
 app.use(limiter); // Rate limiting
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev')); // Logging
-app.use(express.json({ limit: '50mb' })); // JSON parsing with size limit
-app.use(express.urlencoded({ extended: true, limit: '50mb' })); // URL encoded parsing
+app.use(json({ limit: '50mb' })); // JSON parsing with size limit
+app.use(urlencoded({ extended: true, limit: '50mb' })); // URL encoded parsing
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -67,13 +67,13 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-const authRoutes = require('./routes/auth');
-// const uploadRoutes = require('./routes/upload');
+import authRoutes from './routes/auth.js';
+import uploadRoutes from './routes/upload.js';
 // const searchRoutes = require('./routes/search');
 
 // Mount routes
 app.use('/api/v1/auth', authRoutes);
-// app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/upload', uploadRoutes);
 // app.use('/api/v1/search', searchRoutes);
 
 // API Documentation endpoint
@@ -219,4 +219,4 @@ const startServer = async () => {
 // Start the server
 startServer();
 
-module.exports = app;
+export default app;

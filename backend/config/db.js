@@ -1,5 +1,5 @@
 // config/db.js
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from "@supabase/supabase-js";
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -107,7 +107,7 @@ const updateLastLogin = async (userId) => {
     }
 };
 
-module.exports = {
+export {
     supabaseAdmin,
     supabaseClient,
     testConnection,
