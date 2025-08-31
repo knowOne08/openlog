@@ -1,1 +1,0 @@
-Testing this file to be uplaoded at minIO bucket.

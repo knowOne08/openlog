@@ -56,7 +56,7 @@ const requireAdmin = async (req, res, next) => {
         const { data: profile, error } = await supabase
             .from('user_profiles')
             .select('role')
-            .eq('user_id', req.user.id)
+            .eq('email', req.user.email)
             .single();
 
         if (error || profile.role !== 'admin') {
@@ -101,6 +101,7 @@ router.post('/login', async (req, res) => {
             email,
             password
         });
+        // console.log(authData);
 
         if (authError) {
             return res.status(401).json({
@@ -116,10 +117,11 @@ router.post('/login', async (req, res) => {
         const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
             .select('*')
-            .eq('user_id', authData.user.id)
+            .eq('email', authData.user.email)
             .single();
 
         if (profileError) {
+            console.log(profileError);
             return res.status(500).json({
                 success: false,
                 error: {
