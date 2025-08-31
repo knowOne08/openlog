@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenLog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            overflow-x: hidden;
+        }
+        @keyframes aurora-move {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            50% { transform: translate(10%, -10%) scale(1.2); opacity: 0.8; }
+            100% { transform: translate(0, 0) scale(1); opacity: 1; }
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                radial-gradient(circle at 15% 25%, rgba(59, 130, 246, 0.2), transparent 40%),
+                radial-gradient(circle at 85% 75%, rgba(139, 92, 246, 0.15), transparent 40%);
+            filter: blur(120px);
+            z-index: -1;
+            animation: aurora-move 25s ease-in-out infinite;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .glass-input {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-input:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            border-color: #3b82f6;
+        }
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #3b82f6;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="text-slate-300">
+
+    <div class="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 min-h-screen">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">OpenLog</h1>
+            <p class="text-lg text-slate-400 mt-2">Rocketry Division Data Archives</p>
+        </header>
+
+        <div class="flex justify-center mb-8">
+            <nav class="flex space-x-2 p-1.5 rounded-lg bg-slate-900/80">
+                <button id="nav-add" class="nav-button whitespace-nowrap py-2 px-6 rounded-md font-medium text-sm focus:outline-none transition-colors">Add Entry</button>
+                <button id="nav-search" class="nav-button whitespace-nowrap py-2 px-6 rounded-md font-medium text-sm focus:outline-none transition-colors">Search</button>
+            </nav>
+        </div>
+
+        <main>
+            <!-- Add Entry View -->
+            <div id="view-add">
+                 <div class="glass-card p-6 rounded-lg">
+                    <form id="entryForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="uploader_name" class="block text-sm font-medium text-slate-400">Your Name</label>
+                                <input type="text" id="uploader_name" name="uploader_name" required placeholder="e.g., Alani Sharma" class="glass-input mt-1 block w-full px-3 py-2 rounded-md shadow-sm text-white">
+                            </div>
+                            <div>
+                                <label for="title" class="block text-sm font-medium text-slate-400">Title</label>
+                                <input type="text" id="title" name="title" required class="glass-input mt-1 block w-full px-3 py-2 rounded-md shadow-sm text-white">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="description" class="block text-sm font-medium text-slate-400">Description</label>
+                                <textarea id="description" name="description" rows="3" required class="glass-input mt-1 block w-full px-3 py-2 rounded-md shadow-sm text-white"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 mb-4 border-b border-white/10">
+                            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                <button type="button" id="tab-file" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" onclick="switchUploadTab('file')">Upload File</button>
+                                <button type="button" id="tab-link" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" onclick="switchUploadTab('link')">Add Link</button>
+                            </nav>
+                        </div>
+
+                        <div id="panel-file" class="tab-panel">
+                             <label for="file" id="drop-zone" class="flex flex-col items-center justify-center w-full h-40 px-6 mt-1 border-2 border-slate-700 border-dashed rounded-md cursor-pointer hover:bg-slate-800/50 transition-colors">
+                                <div class="space-y-1 text-center">
+                                    <svg class="mx-auto h-12 w-12 text-slate-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                    <div class="flex text-sm text-slate-400"><p class="pl-1">Drag file here, or <span class="font-medium text-blue-400 hover:text-blue-300">browse</span></p></div>
+                                    <p class="text-xs text-slate-500" id="file-name-display"></p>
+                                </div>
+                                <input type="file" id="file" name="file" class="hidden">
+                            </label>
+                        </div>
+                        <div id="panel-link" class="tab-panel hidden">
+                            <input type="url" id="external_url" name="external_url" placeholder="https://www.youtube.com/watch?v=..." class="glass-input mt-1 block w-full px-3 py-2 rounded-md shadow-sm text-white">
+                        </div>
+
+                        <div class="mt-6">
+                            <button type="submit" class="w-full inline-flex justify-center py-2.5 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-blue-500">
+                                Create Entry
+                            </button>
+                        </div>
+                    </form>
+                    <div id="form-status" class="mt-4 text-center h-5"></div>
+                </div>
+            </div>
+
+            <!-- Search View -->
+            <div id="view-search" class="hidden">
+                 <div class="flex items-center space-x-4">
+                    <input type="search" id="search" placeholder="Search by keyword..." class="glass-input block w-full px-4 py-3 rounded-lg shadow-sm text-white">
+                    <div class="flex items-center justify-center flex-shrink-0">
+                        <label for="smart-search-toggle" class="flex items-center cursor-pointer">
+                            <div class="relative">
+                                <input type="checkbox" id="smart-search-toggle" class="sr-only">
+                                <div class="block bg-slate-700 w-12 h-6 rounded-full"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform"></div>
+                            </div>
+                            <div class="ml-3 text-slate-400 text-sm font-medium">Smart Search</div>
+                        </label>
+                        <style>
+                            input:checked ~ .dot { transform: translateX(1.5rem); }
+                        </style>
+                    </div>
+                 </div>
+                 <div id="delete-status" class="mt-4 text-center h-5"></div>
+                 <div id="results" class="mt-6 space-y-4"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_URL = 'http://localhost:3000';
+            let currentUploadTab = 'file';
+
+            const navButtons = document.querySelectorAll('.nav-button');
+            const views = { add: document.getElementById('view-add'), search: document.getElementById('view-search')};
+            const entryForm = document.getElementById('entryForm');
+
+            function switchView(viewName) {
+                Object.values(views).forEach(view => view.classList.add('hidden'));
+                navButtons.forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    btn.classList.add('text-slate-400', 'hover:bg-slate-700');
+                });
+                views[viewName].classList.remove('hidden');
+                document.getElementById(`nav-${viewName}`).classList.add('bg-blue-600', 'text-white');
+            }
+            window.switchUploadTab = function(tab) {
+                currentUploadTab = tab;
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.classList.remove('border-blue-500', 'text-blue-400');
+                    button.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-300');
+                });
+                document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+                document.getElementById(`tab-${tab}`).classList.add('border-blue-500', 'text-blue-400');
+                document.getElementById(`panel-${tab}`).classList.remove('hidden');
+                document.getElementById('file').required = tab === 'file';
+                document.getElementById('external_url').required = tab === 'link';
+            }
+            document.getElementById('nav-add').addEventListener('click', () => switchView('add'));
+            document.getElementById('nav-search').addEventListener('click', () => switchView('search'));
+            
+            // --- MODIFIED: Simplified form submission logic ---
+            entryForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const statusDiv = document.getElementById('form-status');
+                statusDiv.textContent = 'Submitting...';
+                
+                // ALWAYS use FormData. This is the fix.
+                const formData = new FormData(entryForm);
+
+                // Clean up the FormData based on the current tab
+                if (currentUploadTab === 'file') {
+                    formData.delete('external_url');
+                } else {
+                    formData.delete('file');
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/entry`, {
+                        method: 'POST',
+                        body: formData // Server is already set up to handle this
+                    });
+                    
+                    if (!response.ok) { 
+                        const result = await response.json(); 
+                        throw new Error(result.error || result.message || 'An unknown error occurred.'); 
+                    }
+
+                    statusDiv.textContent = 'Success! Entry created.';
+                    entryForm.reset();
+                    document.getElementById('file-name-display').textContent = '';
+                    switchUploadTab('file');
+                } catch (error) {
+                    statusDiv.textContent = `Error: ${error.message}`;
+                } finally {
+                    setTimeout(() => statusDiv.textContent = '', 3000);
+                }
+            });
+
+
+            const searchInput = document.getElementById('search');
+            const resultsDiv = document.getElementById('results');
+            const smartSearchToggle = document.getElementById('smart-search-toggle');
+
+            searchInput.addEventListener('input', async (e) => {
+                const query = e.target.value;
+                if (query.length < 2) {
+                    resultsDiv.innerHTML = '<p class="text-slate-500 text-center">Enter at least 2 characters.</p>';
+                    return;
+                }
+                
+                const isSmartSearchEnabled = smartSearchToggle.checked;
+                let searchUrl = `${API_URL}/search?q=${encodeURIComponent(query)}`;
+                if (isSmartSearchEnabled) {
+                    searchUrl += '&smart=true';
+                }
+
+                try {
+                    const response = await fetch(searchUrl);
+                    if (!response.ok) throw new Error('Search request failed');
+                    const results = await response.json();
+                    renderResults(results);
+                } catch (error) {
+                    resultsDiv.innerHTML = '<p class="text-red-500 text-center">Error fetching search results.</p>';
+                }
+            });
+            
+            function getResultGroup(result) {
+                if (result.entry_type === 'link') {
+                    if (result.external_url.includes('youtube.com') || result.external_url.includes('youtu.be')) return 'YouTube Links';
+                    if (result.external_url.includes('drive.google.com')) return 'Google Drive';
+                    return 'External Links';
+                }
+                if (result.entry_type === 'file') {
+                    const key = result.storage_key.toLowerCase();
+                    if (key.endsWith('.csv')) return 'CSV Files'; if (key.endsWith('.pdf')) return 'PDF Documents';
+                    if (key.endsWith('.mp4') || key.endsWith('.mov')) return 'Videos';
+                    if (key.endsWith('.jpg') || key.endsWith('.png')) return 'Images';
+                    if (key.endsWith('.docx')) return 'Word Documents'; if (key.endsWith('.xlsx')) return 'Excel Sheets';
+                    if (key.endsWith('.txt')) return 'Text Files'; return 'Other Files';
+                }
+                return 'Uncategorized';
+            }
+            function renderResults(results) {
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = '<p class="text-slate-500 text-center">No results found.</p>';
+                    return;
+                }
+                const groupedResults = results.reduce((acc, result) => {
+                    const group = getResultGroup(result);
+                    if (!acc[group]) acc[group] = [];
+                    acc[group].push(result);
+                    return acc;
+                }, {});
+                let html = '';
+                const groupOrder = Object.keys(groupedResults).sort(); 
+                for (const groupName of groupOrder) {
+                    const sortedGroup = groupedResults[groupName].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    html += `<div class="mb-6"><h4 class="text-md font-semibold text-slate-400 mb-3 pb-2 border-b border-white/10">${groupName}</h4><div class="space-y-4">`;
+                    html += sortedGroup.map(result => `
+                        <div class="glass-card p-4 rounded-lg" id="result-card-${result.id}">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-grow"><h3 class="font-semibold text-lg text-blue-400">${result.title}</h3>
+                                <p class="text-slate-400 my-2">${result.description}</p>
+                                ${result.uploader_name ? `<div class="flex items-center text-xs text-slate-500 mt-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                Uploaded by ${result.uploader_name}</div>` : ''}</div>
+                                <button class="delete-btn flex-shrink-0 text-slate-500 hover:text-red-500 p-1 ml-4" data-id="${result.id}" data-title="${result.title}" title="Delete Entry">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button></div>
+                            <div class="mt-3">
+                            ${result.entry_type === 'file' 
+                                ? `<a href="${API_URL}/download/${result.storage_key}" class="text-sm font-medium text-blue-400 hover:text-blue-300">Download File (${result.storage_key})</a>`
+                                : `<a href="${result.external_url}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-emerald-400 hover:text-emerald-300">Open Link</a>`
+                            }</div></div>`).join('');
+                    html += `</div></div>`;
+                }
+                resultsDiv.innerHTML = html;
+            }
+            resultsDiv.addEventListener('click', async (e) => {
+                const deleteButton = e.target.closest('.delete-btn');
+                if (deleteButton) {
+                    const entryId = deleteButton.dataset.id;
+                    const entryTitle = deleteButton.dataset.title;
+                    const deleteStatus = document.getElementById('delete-status');
+                    try {
+                        const response = await fetch(`${API_URL}/entry/${entryId}`, { method: 'DELETE' });
+                        if (!response.ok) { const err = await response.json(); throw new Error(err.message || 'Server error'); }
+                        deleteStatus.textContent = `"${entryTitle}" was deleted.`;
+                        const card = document.getElementById(`result-card-${entryId}`);
+                        if(card) {
+                            card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.95)';
+                            setTimeout(() => card.remove(), 300);
+                        }
+                    } catch (error) {
+                        deleteStatus.textContent = `Error: Could not delete entry.`;
+                    } finally {
+                         setTimeout(() => deleteStatus.textContent = '', 3000);
+                    }
+                }
+            });
+
+            const dropZone = document.getElementById('drop-zone');
+            const fileInputForDrop = document.getElementById('file');
+            const fileNameDisplay = document.getElementById('file-name-display');
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+            ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.add('border-blue-500'), false));
+            ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-blue-500'), false));
+            dropZone.addEventListener('drop', (e) => {
+                fileInputForDrop.files = e.dataTransfer.files;
+                handleFiles(fileInputForDrop.files);
+            }, false);
+            fileInputForDrop.addEventListener('change', () => handleFiles(fileInputForDrop.files));
+            function handleFiles(files) { fileNameDisplay.textContent = files.length > 0 ? files[0].name : ''; }
+
+            // Initialize UI State
+            switchView('add');
+            switchUploadTab('file');
+            resultsDiv.innerHTML = '<p class="text-slate-500 text-center">Enter at least 2 characters to search.</p>';
+        });
+    </script>
+</body>
+</html>
