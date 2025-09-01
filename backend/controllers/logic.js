@@ -17,7 +17,7 @@ async function generateTags(summary) {
     return ['example', 'tag']; // Replace with actual tag generation
 }
 
-async function handleUploadMetadata({ title, description, file, ownerId, visibility }) {
+async function handleFileMetaData({ title, description, file, ownerId, visibility, tags }) {
     // 1. Upload file to MinIO
     const objectName = `${Date.now()}_${file.originalname}`;
     await uploadFile(file.buffer, objectName, file.mimetype);
@@ -26,7 +26,7 @@ async function handleUploadMetadata({ title, description, file, ownerId, visibil
     const extracted_text = await extractText(file.buffer, file.mimetype);
     const ai_summary = await generateSummary(extracted_text);
     const embedding = await generateEmbedding(ai_summary);
-    const tags = await generateTags(ai_summary);
+    // const tags = await generateTags(ai_summary);
 
     // 3. Store metadata in Supabase
     const { data: up, error } = await supabaseClient.from('uploads')
@@ -54,6 +54,9 @@ async function handleUploadMetadata({ title, description, file, ownerId, visibil
     await upsertEmbedding(up.id, embedding, { title, description, owner_id: ownerId, tags });
 
     // 5. Store tags (simplified, not normalized)
+    tags = JSON.parse(tags || "[]");
+    console.log(tags);
+
     for (const tag of tags) {
         // Upsert the tag and immediately get the ID
         const { data: tagData, error: tagError } = await supabaseClient
@@ -81,4 +84,62 @@ async function handleUploadMetadata({ title, description, file, ownerId, visibil
     return up;
 }
 
-export { handleUploadMetadata };
+async function handleLinkMetadata({ title, description, url, ownerId, visibility, tags }) {
+    // 1. Content/summary/embedding/tags from description and/or url
+    // Optionally: fetch page text from URL for deeper pipeline
+    const extracted_text = 'This will be implemented in future releases';  // Or fetch content from URL if needed
+    const ai_summary = await generateSummary(description);
+    const embedding = await generateEmbedding(ai_summary);
+    // const tags = await generateTags(ai_summary);
+
+    // 2. Store metadata in Supabase
+    const { data: up, error } = await supabaseClient.from('uploads')
+        .insert([{
+            id: uuidv4(),
+            title,
+            description,
+            file_type: 'link',
+            external_url: url,
+            file_size: null,
+            mime_type: null,
+            owner_id: ownerId,
+            visibility,
+            embeddings: embedding,
+            extracted_text,
+        }])
+        .select()
+        .single();
+
+    if (error || !up) {
+        throw new Error(error?.message || 'Failed to insert link metadata into Supabase');
+    }
+
+    // 3. Store embeddings in Qdrant
+    await upsertEmbedding(up.id, embedding, { title, description, owner_id: ownerId, tags });
+
+    // 4. Store tags (same loop as your existing logic)
+    console.log("file tags:", tags)
+
+    for (const tag of tags) {
+        const { data: tagData, error: tagError } = await supabaseClient
+            .from('tags')
+            .upsert({ name: tag })
+            .select('id')
+            .single();
+        if (tagError || !tagData) {
+            console.error(`Error upserting or retrieving tag: ${tag}`);
+            continue;
+        }
+        const { error: uploadTagError } = await supabaseClient
+            .from('upload_tags')
+            .upsert({ upload_id: up.id, tag_id: tagData.id });
+        if (uploadTagError) {
+            console.error(`Error linking tag to upload: ${uploadTagError.message}`);
+        }
+    }
+
+    return up;
+}
+
+
+export { handleFileMetaData, handleLinkMetadata };

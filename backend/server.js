@@ -94,11 +94,11 @@ app.get('/api/v1', (req, res) => {
                     getMembers: 'GET /api/v1/auth/admin/members',
                     updateMemberStatus: 'PUT /api/v1/auth/admin/members/:userId/status'
                 }
-            }
-            // upload: {
-            //   file: 'POST /api/v1/upload/file',
-            //   link: 'POST /api/v1/upload/link'
-            // },
+            },
+            upload: {
+                file: 'POST /api/v1/upload/file',
+                link: 'POST /api/v1/upload/link'
+            },
             // search: {
             //   query: 'GET /api/v1/search',
             //   suggestions: 'GET /api/v1/search/suggestions'

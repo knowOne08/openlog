@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
-import { LockClosedIcon } from '@heroicons/react/24/outline';
+import { ReactNode } from "react";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { useState } from "react";
+import { LockClosedIcon } from "@heroicons/react/24/outline";
 
 interface InputFieldProps {
   id: string;
@@ -26,7 +26,7 @@ export function InputField({
   onChange,
   required = false,
   autoComplete,
-  className = ''
+  className = "",
 }: InputFieldProps) {
   return (
     <div>
@@ -65,7 +65,7 @@ export function PasswordField({
   value,
   onChange,
   required = false,
-  autoComplete
+  autoComplete,
 }: PasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -78,7 +78,7 @@ export function PasswordField({
         <input
           id={id}
           name={name}
-          type={showPassword ? 'text' : 'password'}
+          type={showPassword ? "text" : "password"}
           autoComplete={autoComplete}
           required={required}
           value={value}
@@ -103,28 +103,29 @@ export function PasswordField({
 }
 
 interface ButtonProps {
-  type?: 'button' | 'submit' | 'reset';
+  type?: "button" | "submit" | "reset";
   onClick?: () => void;
   disabled?: boolean;
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: "primary" | "secondary" | "outline";
   className?: string;
 }
 
 export function Button({
-  type = 'button',
+  type = "button",
   onClick,
   disabled = false,
   children,
-  variant = 'primary',
-  className = ''
+  variant = "primary",
+  className = "",
 }: ButtonProps) {
-  const baseClasses = "group relative w-full flex justify-center py-3 px-4 border text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed";
-  
+  const baseClasses =
+    "group relative w-full flex justify-center py-3 px-4 border text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed";
+
   const variantClasses = {
     primary: "border-transparent text-white bg-gray-800 hover:bg-gray-600",
     secondary: "border-transparent text-teal-700 bg-teal-100 hover:bg-teal-200",
-    outline: "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+    outline: "border-gray-300 text-gray-700 bg-white hover:bg-gray-50",
   };
 
   return (
@@ -140,23 +141,28 @@ export function Button({
 }
 
 interface SocialButtonProps {
-  provider: 'google' | 'microsoft';
+  provider: "google" | "microsoft";
   onClick: () => void;
   disabled?: boolean;
   children: ReactNode;
 }
 
-export function SocialButton({ provider, onClick, disabled = false, children }: SocialButtonProps) {
+export function SocialButton({
+  provider,
+  onClick,
+  disabled = false,
+  children,
+}: SocialButtonProps) {
   const getProviderIcon = () => {
-    if (provider === 'google') {
+    if (provider === "google") {
       return (
         <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold mr-3">
           G
         </div>
       );
     }
-    
-    if (provider === 'microsoft') {
+
+    if (provider === "microsoft") {
       return (
         <div className="w-5 h-5 grid grid-cols-2 gap-0.5 mr-3">
           <div className="w-2 h-2 bg-red-500"></div>
@@ -166,7 +172,7 @@ export function SocialButton({ provider, onClick, disabled = false, children }: 
         </div>
       );
     }
-    
+
     return null;
   };
 
@@ -186,7 +192,7 @@ interface SeparatorProps {
   text?: string;
 }
 
-export function Separator({ text = 'or' }: SeparatorProps) {
+export function Separator({ text = "or" }: SeparatorProps) {
   return (
     <div className="relative">
       <div className="absolute inset-0 flex items-center">
@@ -203,12 +209,13 @@ interface ComplianceInfoProps {
   className?: string;
 }
 
-export function ComplianceInfo({ className = '' }: ComplianceInfoProps) {
+export function ComplianceInfo({ className = "" }: ComplianceInfoProps) {
   return (
-    <div className={`flex items-center justify-center text-xs text-gray-500 ${className}`}>
+    <div
+      className={`flex items-center justify-center text-xs text-gray-500 ${className}`}
+    >
       <LockClosedIcon className="h-4 w-4 mr-1" />
       GDPR compliant. ISO-27001 certified.
     </div>
   );
 }
-

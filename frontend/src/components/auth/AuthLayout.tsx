@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import Link from 'next/link';
+import { ReactNode } from "react";
+import Link from "next/link";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -19,8 +19,8 @@ export default function AuthLayout({
   subtitle,
   rightPanelContent,
   showBackLink = false,
-  backLinkHref = '/auth/signin',
-  backLinkText = 'Back to sign in'
+  backLinkHref = "/auth/signin",
+  backLinkText = "Back to sign in",
 }: AuthLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -30,12 +30,8 @@ export default function AuthLayout({
           {/* Header */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-teal-800">OpenLog</h1>
-            <h2 className="mt-6 text-2xl font-bold text-teal-800">
-              {title}
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              {subtitle}
-            </p>
+            <h2 className="mt-6 text-2xl font-bold text-teal-800">{title}</h2>
+            <p className="mt-2 text-sm text-gray-600">{subtitle}</p>
           </div>
 
           {/* Form Content */}
@@ -48,7 +44,10 @@ export default function AuthLayout({
         {/* Navigation Link */}
         {showBackLink && (
           <div className="text-right mb-8">
-            <Link href={backLinkHref} className="text-teal-600 hover:text-teal-500 font-medium underline">
+            <Link
+              href={backLinkHref}
+              className="text-teal-600 hover:text-teal-500 font-medium underline"
+            >
               {backLinkText}
             </Link>
           </div>
@@ -83,4 +82,3 @@ export default function AuthLayout({
     </div>
   );
 }
-

@@ -1,168 +1,1070 @@
-'use client';
+// "use client";
 
-import { useState, useCallback, useRef } from 'react';
-import { XMarkIcon, FolderIcon, CalendarIcon, LinkIcon, PhotoIcon, VideoCameraIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '@/hooks/useAuth';
+// import { useState, useCallback, useRef } from "react";
+// import {
+//   XMarkIcon,
+//   FolderIcon,
+//   CalendarIcon,
+//   LinkIcon,
+//   PhotoIcon,
+//   VideoCameraIcon,
+// } from "@heroicons/react/24/outline";
+// import { useAuth } from "@/hooks/useAuth";
 
-// Date picker component
-function DatePicker({ 
-  value, 
-  onChange, 
-  placeholder = "Select date" 
-}: { 
-  value?: string; 
-  onChange: (date: string) => void; 
-  placeholder?: string; 
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    if (value) {
-      const date = new Date(value);
-      return new Date(date.getFullYear(), date.getMonth(), 1);
-    }
-    return new Date();
-  });
+// // Date picker component
+// function DatePicker({
+//   value,
+//   onChange,
+//   placeholder = "Select date",
+// }: {
+//   value?: string;
+//   onChange: (date: string) => void;
+//   placeholder?: string;
+// }) {
+//   const [isOpen, setIsOpen] = useState(false);
+//   const [currentMonth, setCurrentMonth] = useState(() => {
+//     if (value) {
+//       const date = new Date(value);
+//       return new Date(date.getFullYear(), date.getMonth(), 1);
+//     }
+//     return new Date();
+//   });
 
-  const today = new Date();
-  const minDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+//   const today = new Date();
+//   const minDate = new Date(
+//     today.getFullYear(),
+//     today.getMonth(),
+//     today.getDate()
+//   );
 
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
-    
-    const days = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDay; i++) {
-      days.push(null);
-    }
-    
-    // Add days of the month
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
-    }
-    
-    return days;
-  };
+//   const getDaysInMonth = (date: Date) => {
+//     const year = date.getFullYear();
+//     const month = date.getMonth();
+//     const firstDay = new Date(year, month, 1);
+//     const lastDay = new Date(year, month + 1, 0);
+//     const daysInMonth = lastDay.getDate();
+//     const startingDay = firstDay.getDay();
 
-  const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
+//     const days = [];
 
-  const handleDateSelect = (date: Date) => {
-    onChange(formatDate(date));
-    setIsOpen(false);
-  };
+//     // Add empty cells for days before the first day of the month
+//     for (let i = 0; i < startingDay; i++) {
+//       days.push(null);
+//     }
 
-  const goToPreviousMonth = () => {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  };
+//     // Add days of the month
+//     for (let i = 1; i <= daysInMonth; i++) {
+//       days.push(new Date(year, month, i));
+//     }
 
-  const goToNextMonth = () => {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  };
+//     return days;
+//   };
 
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+//   const formatDate = (date: Date) => {
+//     return date.toISOString().split("T")[0];
+//   };
 
-  const days = getDaysInMonth(currentMonth);
+//   const handleDateSelect = (date: Date) => {
+//     onChange(formatDate(date));
+//     setIsOpen(false);
+//   };
 
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between"
-      >
-        <span className={value ? 'text-gray-900' : 'text-gray-500'}>
-          {value ? new Date(value).toLocaleDateString() : placeholder}
-        </span>
-        <CalendarIcon className="h-5 w-5 text-gray-400" />
-      </button>
+//   const goToPreviousMonth = () => {
+//     setCurrentMonth(
+//       (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+//     );
+//   };
 
-      {isOpen && (
-        <div className="absolute z-10 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg">
-          {/* Calendar Header */}
-          <div className="flex items-center justify-between p-3 border-b border-gray-200">
-            <button
-              onClick={goToPreviousMonth}
-              className="p-1 hover:bg-gray-100 rounded"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <span className="font-medium text-gray-900">
-              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-            </span>
-            <button
-              onClick={goToNextMonth}
-              className="p-1 hover:bg-gray-100 rounded"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+//   const goToNextMonth = () => {
+//     setCurrentMonth(
+//       (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+//     );
+//   };
 
-          {/* Calendar Grid */}
-          <div className="p-3">
-            {/* Day headers */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
-                  {day}
-                </div>
-              ))}
-            </div>
+//   const monthNames = [
+//     "January",
+//     "February",
+//     "March",
+//     "April",
+//     "May",
+//     "June",
+//     "July",
+//     "August",
+//     "September",
+//     "October",
+//     "November",
+//     "December",
+//   ];
 
-            {/* Calendar days */}
-            <div className="grid grid-cols-7 gap-1">
-              {days.map((day, index) => (
-                <button
-                  key={index}
-                  onClick={() => day && handleDateSelect(day)}
-                  disabled={!day || day < minDate}
-                  className={`
-                    p-2 text-sm rounded-lg transition-colors
-                    ${!day 
-                      ? 'invisible' 
-                      : day < minDate 
-                        ? 'text-gray-300 cursor-not-allowed' 
-                        : value && formatDate(day) === value
-                          ? 'bg-blue-600 text-white'
-                          : 'hover:bg-gray-100 text-gray-900'
-                    }
-                  `}
-                >
-                  {day?.getDate()}
-                </button>
-              ))}
-            </div>
-          </div>
+//   const days = getDaysInMonth(currentMonth);
 
-          {/* Clear button */}
-          {value && (
-            <div className="p-3 border-t border-gray-200">
-              <button
-                onClick={() => onChange('')}
-                className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                Clear date
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+//   return (
+//     <div className="relative">
+//       <button
+//         type="button"
+//         onClick={() => setIsOpen(!isOpen)}
+//         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between"
+//       >
+//         <span className={value ? "text-gray-900" : "text-gray-500"}>
+//           {value ? new Date(value).toLocaleDateString() : placeholder}
+//         </span>
+//         <CalendarIcon className="h-5 w-5 text-gray-400" />
+//       </button>
+
+//       {isOpen && (
+//         <div className="absolute z-10 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg">
+//           {/* Calendar Header */}
+//           <div className="flex items-center justify-between p-3 border-b border-gray-200">
+//             <button
+//               onClick={goToPreviousMonth}
+//               className="p-1 hover:bg-gray-100 rounded"
+//             >
+//               <svg
+//                 className="w-5 h-5"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 viewBox="0 0 24 24"
+//               >
+//                 <path
+//                   strokeLinecap="round"
+//                   strokeLinejoin="round"
+//                   strokeWidth={2}
+//                   d="M15 19l-7-7 7-7"
+//                 />
+//               </svg>
+//             </button>
+//             <span className="font-medium text-gray-900">
+//               {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+//             </span>
+//             <button
+//               onClick={goToNextMonth}
+//               className="p-1 hover:bg-gray-100 rounded"
+//             >
+//               <svg
+//                 className="w-5 h-5"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 viewBox="0 0 24 24"
+//               >
+//                 <path
+//                   strokeLinecap="round"
+//                   strokeLinejoin="round"
+//                   strokeWidth={2}
+//                   d="M9 5l7 7-7 7"
+//                 />
+//               </svg>
+//             </button>
+//           </div>
+
+//           {/* Calendar Grid */}
+//           <div className="p-3">
+//             {/* Day headers */}
+//             <div className="grid grid-cols-7 gap-1 mb-2">
+//               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+//                 <div
+//                   key={day}
+//                   className="text-center text-xs font-medium text-gray-500 py-1"
+//                 >
+//                   {day}
+//                 </div>
+//               ))}
+//             </div>
+
+//             {/* Calendar days */}
+//             <div className="grid grid-cols-7 gap-1">
+//               {days.map((day, index) => (
+//                 <button
+//                   key={index}
+//                   onClick={() => day && handleDateSelect(day)}
+//                   disabled={!day || day < minDate}
+//                   className={`
+//                     p-2 text-sm rounded-lg transition-colors
+//                     ${
+//                       !day
+//                         ? "invisible"
+//                         : day < minDate
+//                         ? "text-gray-300 cursor-not-allowed"
+//                         : value && formatDate(day) === value
+//                         ? "bg-blue-600 text-white"
+//                         : "hover:bg-gray-100 text-gray-900"
+//                     }
+//                   `}
+//                 >
+//                   {day?.getDate()}
+//                 </button>
+//               ))}
+//             </div>
+//           </div>
+
+//           {/* Clear button */}
+//           {value && (
+//             <div className="p-3 border-t border-gray-200">
+//               <button
+//                 onClick={() => onChange("")}
+//                 className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+//               >
+//                 Clear date
+//               </button>
+//             </div>
+//           )}
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+// interface UploadModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   onUploadSuccess?: (upload: any) => void;
+// }
+
+// interface UploadFormData {
+//   title: string;
+//   description: string;
+//   visibility: "private" | "public" | "team";
+//   tags: string[];
+//   scheduledDate?: string;
+// }
+
+// interface LinkFormData {
+//   title: string;
+//   description: string;
+//   url: string;
+//   visibility: "private" | "public" | "team";
+//   tags: string[];
+//   scheduledDate?: string;
+// }
+
+// export default function UploadModal({
+//   isOpen,
+//   onClose,
+//   onUploadSuccess,
+// }: UploadModalProps) {
+//   const { user } = useAuth();
+//   const [activeTab, setActiveTab] = useState<"file" | "link">("file");
+//   const [isDragging, setIsDragging] = useState(false);
+//   const [isUploading, setIsUploading] = useState(false);
+//   const [uploadProgress, setUploadProgress] = useState(0);
+//   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+//   // File upload form data
+//   const [fileFormData, setFileFormData] = useState<UploadFormData>({
+//     title: "",
+//     description: "",
+//     visibility: "private",
+//     tags: [],
+//     scheduledDate: "",
+//   });
+
+//   // Link upload form data
+//   const [linkFormData, setLinkFormData] = useState<LinkFormData>({
+//     title: "",
+//     description: "",
+//     url: "",
+//     visibility: "private",
+//     tags: [],
+//     scheduledDate: "",
+//   });
+
+//   const [tagInput, setTagInput] = useState("");
+//   const fileInputRef = useRef<HTMLInputElement>(null);
+
+//   const handleDragOver = useCallback((e: React.DragEvent) => {
+//     e.preventDefault();
+//     setIsDragging(true);
+//   }, []);
+
+//   const handleDragLeave = useCallback((e: React.DragEvent) => {
+//     e.preventDefault();
+//     setIsDragging(false);
+//   }, []);
+
+//   const handleDrop = useCallback((e: React.DragEvent) => {
+//     e.preventDefault();
+//     setIsDragging(false);
+
+//     const files = Array.from(e.dataTransfer.files);
+//     if (files.length > 0) {
+//       handleFileSelect(files[0]);
+//     }
+//   }, []);
+
+//   const handleFileSelect = (file: File) => {
+//     // Check file size (4MB limit as shown in design)
+//     // if (file.size > 4 * 1024 * 1024) {
+//     //   alert('File size must be less than 4MB');
+//     //   return;
+//     // }
+
+//     // Check file type (images and videos)
+//     const validTypes = [
+//       "image/",
+//       "video/",
+//       "application/pdf",
+//       "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
+//       "application/vnd.openxmlformats-officedocument.presentationml.presentation", //pptx
+//     ];
+
+//     if (!validTypes.some((type) => file.type.startsWith(type))) {
+//       alert("Please select an appropriate file type");
+//       return;
+//     }
+
+//     setSelectedFile(file);
+
+//     // Auto-fill title if empty
+//     if (!fileFormData.title) {
+//       const fileName = file.name.replace(/\.[^/.]+$/, "");
+//       setFileFormData((prev) => ({ ...prev, title: fileName }));
+//     }
+//   };
+
+//   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//     const file = e.target.files?.[0];
+//     if (file) {
+//       handleFileSelect(file);
+//     }
+//   };
+
+//   const handleTagAdd = (formType: "file" | "link") => {
+//     if (tagInput.trim()) {
+//       const maxTags = 20;
+//       const currentTags =
+//         formType === "file" ? fileFormData.tags : linkFormData.tags;
+
+//       if (currentTags.length >= maxTags) {
+//         alert(`Maximum ${maxTags} tags allowed`);
+//         return;
+//       }
+
+//       if (formType === "file") {
+//         setFileFormData((prev) => ({
+//           ...prev,
+//           tags: [...prev.tags, tagInput.trim()],
+//         }));
+//       } else {
+//         setLinkFormData((prev) => ({
+//           ...prev,
+//           tags: [...prev.tags, tagInput.trim()],
+//         }));
+//       }
+//       setTagInput("");
+//     }
+//   };
+
+//   const handleTagRemove = (tagToRemove: string, formType: "file" | "link") => {
+//     if (formType === "file") {
+//       setFileFormData((prev) => ({
+//         ...prev,
+//         tags: prev.tags.filter((tag) => tag !== tagToRemove),
+//       }));
+//     } else {
+//       setLinkFormData((prev) => ({
+//         ...prev,
+//         tags: prev.tags.filter((tag) => tag !== tagToRemove),
+//       }));
+//     }
+//   };
+
+//   const handleTagInputKeyPress = (
+//     e: React.KeyboardEvent,
+//     formType: "file" | "link"
+//   ) => {
+//     if (e.key === "Enter") {
+//       e.preventDefault();
+//       handleTagAdd(formType);
+//     }
+//   };
+
+//   const handleFileUpload = async (action: "upload") => {
+//     if (
+//       !selectedFile ||
+//       !fileFormData.title.trim() ||
+//       !fileFormData.description ||
+//       !fileFormData.scheduledDate ||
+//       !fileFormData.tags ||
+//       !fileFormData.visibility
+//     ) {
+//       alert("Please provide all details in form");
+//       return;
+//     }
+
+//     if (!user) {
+//       alert("Please sign in to upload files");
+//       return;
+//     }
+
+//     setIsUploading(true);
+//     setUploadProgress(0);
+
+//     try {
+//       const formDataToSend = new FormData();
+//       formDataToSend.append("file", selectedFile);
+//       formDataToSend.append("title", fileFormData.title);
+//       formDataToSend.append("description", fileFormData.description);
+//       formDataToSend.append("owner_id", user.id);
+//       formDataToSend.append("visibility", fileFormData.visibility);
+//       if (fileFormData.scheduledDate) {
+//         formDataToSend.append("scheduled_date", fileFormData.scheduledDate);
+//       }
+
+//       // Simulate upload progress
+//       const progressInterval = setInterval(() => {
+//         setUploadProgress((prev) => {
+//           if (prev >= 90) {
+//             clearInterval(progressInterval);
+//             return 90;
+//           }
+//           return prev + 10;
+//         });
+//       }, 200);
+
+//       const response = await fetch(
+//         `${process.env.NEXT_PUBLIC_API_URL}/upload/file`,
+//         {
+//           method: "POST",
+//           headers: {
+//             Authorization: `Bearer ${localStorage.getItem(
+//               "surfe_access_token"
+//             )}`,
+//           },
+//           body: formDataToSend,
+//         }
+//       );
+
+//       clearInterval(progressInterval);
+//       setUploadProgress(100);
+
+//       if (!response.ok) {
+//         throw new Error("Upload failed");
+//       }
+
+//       const result = await response.json();
+
+//       if (result.success) {
+//         // Add scheduled date to the upload result if it exists
+//         const uploadWithDate = {
+//           ...result.upload,
+//           scheduled_date: fileFormData.scheduledDate || null,
+//         };
+//         onUploadSuccess?.(uploadWithDate);
+//         onClose();
+//         // Reset form
+//         setSelectedFile(null);
+//         setFileFormData({
+//           title: "",
+//           description: "",
+//           visibility: "private",
+//           tags: [],
+//           scheduledDate: "",
+//         });
+//         setTagInput("");
+//       } else {
+//         throw new Error(result.error || "Upload failed");
+//       }
+//     } catch (error) {
+//       console.error("Upload error:", error);
+//       alert(
+//         "Upload failed: " +
+//           (error instanceof Error ? error.message : "Unknown error")
+//       );
+//     } finally {
+//       setIsUploading(false);
+//       setUploadProgress(0);
+//     }
+//   };
+
+//   const handleLinkUpload = async (action: "upload") => {
+//     if (
+//       !linkFormData.url.trim() ||
+//       !linkFormData.title.trim() ||
+//       !linkFormData.description ||
+//       !linkFormData.scheduledDate ||
+//       !linkFormData.tags ||
+//       !linkFormData.visibility
+//     ) {
+//       alert("Please provide all details in form.");
+//       return;
+//     }
+
+//     if (!user) {
+//       alert("Please sign in to upload links");
+//       return;
+//     }
+
+//     setIsUploading(true);
+//     setUploadProgress(0);
+
+//     try {
+//       // Simulate upload progress
+//       const progressInterval = setInterval(() => {
+//         setUploadProgress((prev) => {
+//           if (prev >= 90) {
+//             clearInterval(progressInterval);
+//             return 90;
+//           }
+//           return prev + 10;
+//         });
+//       }, 200);
+
+//       // TODO: Implement link upload endpoint
+//       // For now, simulate success
+//       console.log(linkFormData.tags);
+//       const response = await fetch(
+//         `${process.env.NEXT_PUBLIC_API_URL}/upload/link`,
+//         {
+//           method: "POST",
+//           headers: {
+//             Authorization: `Bearer ${localStorage.getItem(
+//               "surfe_access_token"
+//             )}`,
+//             "Content-Type": "application/json",
+//           },
+//           body: JSON.stringify({
+//             title: linkFormData.title,
+//             description: linkFormData.description,
+//             url: linkFormData.url,
+//             owner_id: user.id,
+//             visibility: linkFormData.visibility,
+//             scheduled_date: linkFormData.scheduledDate || null,
+//             tags: linkFormData.tags || [],
+//           }),
+//         }
+//       );
+
+//       clearInterval(progressInterval);
+//       setUploadProgress(100);
+
+//       const result = await response.json();
+
+//       if (!response.ok) {
+//         throw new Error(result.error || "Upload failed");
+//       }
+
+//       if (result.success) {
+//         onUploadSuccess?.(result.upload);
+//         onClose();
+//       }
+
+//       // Reset form
+//       setLinkFormData({
+//         title: "",
+//         description: "",
+//         url: "",
+//         visibility: "private",
+//         tags: [],
+//         scheduledDate: "",
+//       });
+//       setTagInput("");
+//     } catch (error) {
+//       console.error("Link upload error:", error);
+//       alert(
+//         "Link upload failed: " +
+//           (error instanceof Error ? error.message : "Unknown error")
+//       );
+//     } finally {
+//       setIsUploading(false);
+//       setUploadProgress(0);
+//     }
+//   };
+
+//   const handleSubmit = async (action: "upload") => {
+//     if (activeTab === "file") {
+//       await handleFileUpload(action);
+//     } else {
+//       await handleLinkUpload(action);
+//     }
+//   };
+
+//   if (!isOpen) return null;
+
+//   return (
+//     <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+//       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+//         {/* Header */}
+//         <div className="flex items-center justify-between p-6 border-b border-gray-200">
+//           <div>
+//             <h2 className="text-xl font-semibold text-gray-900">
+//               Upload Section
+//             </h2>
+//             <p className="text-sm text-gray-600 mt-1">
+//               Upload files or add links to upload.
+//             </p>
+//           </div>
+//           <button
+//             onClick={onClose}
+//             className="text-gray-400 hover:text-gray-600 transition-colors"
+//           >
+//             <XMarkIcon className="h-6 w-6" />
+//           </button>
+//         </div>
+
+//         {/* Tabs */}
+//         <div className="flex border-b border-gray-200">
+//           <button
+//             onClick={() => setActiveTab("file")}
+//             className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+//               activeTab === "file"
+//                 ? "text-blue-600 border-b-2 border-blue-600"
+//                 : "text-gray-500 hover:text-gray-700"
+//             }`}
+//           >
+//             <div className="flex items-center justify-center gap-2">
+//               <FolderIcon className="h-5 w-5" />
+//               File Upload
+//             </div>
+//           </button>
+//           <button
+//             onClick={() => setActiveTab("link")}
+//             className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+//               activeTab === "link"
+//                 ? "text-blue-600 border-b-2 border-blue-600"
+//                 : "text-gray-500 hover:text-gray-700"
+//             }`}
+//           >
+//             <div className="flex items-center justify-center gap-2">
+//               <LinkIcon className="h-5 w-5" />
+//               Link Upload
+//             </div>
+//           </button>
+//         </div>
+
+//         {/* Content */}
+//         <div className="p-6 space-y-6">
+//           {/* File Upload Section */}
+//           {activeTab === "file" && (
+//             <>
+//               {/* Upload Area */}
+//               <div
+//                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+//                   isDragging
+//                     ? "border-blue-500 bg-blue-50"
+//                     : "border-gray-300 hover:border-gray-400"
+//                 }`}
+//                 onDragOver={handleDragOver}
+//                 onDragLeave={handleDragLeave}
+//                 onDrop={handleDrop}
+//               >
+//                 {selectedFile ? (
+//                   <div className="space-y-4">
+//                     <div className="flex items-center justify-center">
+//                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+//                         {selectedFile.type.startsWith("image/") ? (
+//                           <PhotoIcon className="h-8 w-8 text-gray-600" />
+//                         ) : (
+//                           <VideoCameraIcon className="h-8 w-8 text-gray-600" />
+//                         )}
+//                       </div>
+//                     </div>
+//                     <div>
+//                       <p className="text-sm font-medium text-gray-900">
+//                         {selectedFile.name}
+//                       </p>
+//                       <p className="text-xs text-gray-500">
+//                         {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+//                       </p>
+//                     </div>
+//                     <button
+//                       onClick={() => setSelectedFile(null)}
+//                       className="text-sm text-red-600 hover:text-red-700 underline"
+//                     >
+//                       Remove file
+//                     </button>
+//                   </div>
+//                 ) : (
+//                   <div className="space-y-4">
+//                     <div className="flex justify-center">
+//                       <FolderIcon className="h-12 w-12 text-gray-400" />
+//                     </div>
+//                     <div>
+//                       <p className="text-sm font-medium text-gray-900">
+//                         Upload an image or video
+//                       </p>
+//                       <p className="text-xs text-gray-500">
+//                         or, click to{" "}
+//                         <button
+//                           onClick={() => fileInputRef.current?.click()}
+//                           className="text-sm text-blue-600 hover:text-blue-700 underline"
+//                         >
+//                           Browse files
+//                         </button>
+//                       </p>
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 <input
+//                   ref={fileInputRef}
+//                   type="file"
+//                   accept="image/*,video/*,.pdf,.docx,.pptx"
+//                   onChange={handleFileInputChange}
+//                   className="hidden"
+//                 />
+//               </div>
+
+//               {/* File Form Fields */}
+//               <div className="grid grid-cols-2 gap-4">
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-2">
+//                     File name
+//                   </label>
+//                   <input
+//                     type="text"
+//                     value={fileFormData.title}
+//                     onChange={(e) =>
+//                       setFileFormData((prev) => ({
+//                         ...prev,
+//                         title: e.target.value,
+//                       }))
+//                     }
+//                     placeholder="Enter File name"
+//                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                   />
+//                 </div>
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-2">
+//                     Visibility
+//                   </label>
+//                   <select
+//                     value={fileFormData.visibility}
+//                     onChange={(e) =>
+//                       setFileFormData((prev) => ({
+//                         ...prev,
+//                         visibility: e.target.value as any,
+//                       }))
+//                     }
+//                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                   >
+//                     <option value="private">Private</option>
+//                     <option value="team">Team</option>
+//                     <option value="public">Public</option>
+//                   </select>
+//                 </div>
+//               </div>
+
+//               {/* Description */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Description
+//                 </label>
+//                 <textarea
+//                   value={fileFormData.description}
+//                   onChange={(e) =>
+//                     setFileFormData((prev) => ({
+//                       ...prev,
+//                       description: e.target.value,
+//                     }))
+//                   }
+//                   placeholder="Describe your file details..."
+//                   rows={3}
+//                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                 />
+//               </div>
+
+//               {/* Scheduled Date */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Date
+//                 </label>
+//                 <DatePicker
+//                   value={fileFormData.scheduledDate}
+//                   onChange={(date) =>
+//                     setFileFormData((prev) => ({
+//                       ...prev,
+//                       scheduledDate: date,
+//                     }))
+//                   }
+//                   placeholder="Select date to upload"
+//                 />
+//               </div>
+
+//               {/* Tags */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Add tags
+//                 </label>
+//                 <div className="space-y-3">
+//                   <div className="flex gap-2">
+//                     <input
+//                       type="text"
+//                       value={tagInput}
+//                       onChange={(e) => setTagInput(e.target.value)}
+//                       onKeyPress={(e) => handleTagInputKeyPress(e, "file")}
+//                       placeholder="Type to search..."
+//                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                     />
+//                     <button
+//                       onClick={() => handleTagAdd("file")}
+//                       disabled={
+//                         !tagInput.trim() || fileFormData.tags.length >= 20
+//                       }
+//                       className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+//                     >
+//                       Add
+//                     </button>
+//                   </div>
+//                   <div className="flex items-center justify-between">
+//                     <div className="flex flex-wrap gap-2">
+//                       {fileFormData.tags.map((tag, index) => (
+//                         <span
+//                           key={index}
+//                           className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+//                         >
+//                           + {tag}
+//                           <button
+//                             onClick={() => handleTagRemove(tag, "file")}
+//                             className="text-gray-500 hover:text-gray-700 ml-1"
+//                           >
+//                             ×
+//                           </button>
+//                         </span>
+//                       ))}
+//                     </div>
+//                     <span className="text-xs text-gray-500">
+//                       {20 - fileFormData.tags.length} tags remaining
+//                     </span>
+//                   </div>
+//                 </div>
+//               </div>
+//             </>
+//           )}
+
+//           {/* Link Upload Section */}
+//           {activeTab === "link" && (
+//             <>
+//               {/* Link Input */}
+//               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+//                 <div className="space-y-4">
+//                   <div className="flex justify-center">
+//                     <LinkIcon className="h-12 w-12 text-gray-400" />
+//                   </div>
+//                   <div>
+//                     <p className="text-sm font-medium text-gray-900">
+//                       Add a link
+//                     </p>
+//                     <p className="text-xs text-gray-500">
+//                       Enter a URL to for anything you want to upload.
+//                     </p>
+//                   </div>
+//                   <div className="max-w-md mx-auto">
+//                     <input
+//                       type="url"
+//                       value={linkFormData.url}
+//                       onChange={(e) =>
+//                         setLinkFormData((prev) => ({
+//                           ...prev,
+//                           url: e.target.value,
+//                         }))
+//                       }
+//                       placeholder="https://example.com"
+//                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                     />
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {/* Link Form Fields */}
+//               <div className="grid grid-cols-2 gap-4">
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-2">
+//                     File name
+//                   </label>
+//                   <input
+//                     type="text"
+//                     value={linkFormData.title}
+//                     onChange={(e) =>
+//                       setLinkFormData((prev) => ({
+//                         ...prev,
+//                         title: e.target.value,
+//                       }))
+//                     }
+//                     placeholder="Enter file name"
+//                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                   />
+//                 </div>
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 mb-2">
+//                     Visibility
+//                   </label>
+//                   <select
+//                     value={linkFormData.visibility}
+//                     onChange={(e) =>
+//                       setLinkFormData((prev) => ({
+//                         ...prev,
+//                         visibility: e.target.value as any,
+//                       }))
+//                     }
+//                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                   >
+//                     <option value="private">Private</option>
+//                     <option value="team">Team</option>
+//                     <option value="public">Public</option>
+//                   </select>
+//                 </div>
+//               </div>
+
+//               {/* Description */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Description
+//                 </label>
+//                 <textarea
+//                   value={linkFormData.description}
+//                   onChange={(e) =>
+//                     setLinkFormData((prev) => ({
+//                       ...prev,
+//                       description: e.target.value,
+//                     }))
+//                   }
+//                   placeholder="Describe your file in details..."
+//                   rows={3}
+//                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                 />
+//               </div>
+
+//               {/* Scheduled Date */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Date
+//                 </label>
+//                 <DatePicker
+//                   value={linkFormData.scheduledDate}
+//                   onChange={(date) =>
+//                     setLinkFormData((prev) => ({
+//                       ...prev,
+//                       scheduledDate: date,
+//                     }))
+//                   }
+//                   placeholder="Select date to upload"
+//                 />
+//               </div>
+
+//               {/* Tags */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Add tags
+//                 </label>
+//                 <div className="space-y-3">
+//                   <div className="flex gap-2">
+//                     <input
+//                       type="text"
+//                       value={tagInput}
+//                       onChange={(e) => setTagInput(e.target.value)}
+//                       onKeyPress={(e) => handleTagInputKeyPress(e, "link")}
+//                       placeholder="Type to search..."
+//                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                     />
+//                     <button
+//                       onClick={() => handleTagAdd("link")}
+//                       disabled={
+//                         !tagInput.trim() || linkFormData.tags.length >= 20
+//                       }
+//                       className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+//                     >
+//                       Add
+//                     </button>
+//                   </div>
+//                   <div className="flex items-center justify-between">
+//                     <div className="flex flex-wrap gap-2">
+//                       {linkFormData.tags.map((tag, index) => (
+//                         <span
+//                           key={index}
+//                           className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+//                         >
+//                           + {tag}
+//                           <button
+//                             onClick={() => handleTagRemove(tag, "link")}
+//                             className="text-gray-500 hover:text-gray-700 ml-1"
+//                           >
+//                             ×
+//                           </button>
+//                         </span>
+//                       ))}
+//                     </div>
+//                     <span className="text-xs text-gray-500">
+//                       {20 - linkFormData.tags.length} tags remaining
+//                     </span>
+//                   </div>
+//                 </div>
+//               </div>
+//             </>
+//           )}
+
+//           {/* Upload Progress */}
+//           {isUploading && (
+//             <div className="space-y-2">
+//               <div className="flex justify-between text-sm text-gray-600">
+//                 <span>Uploading...</span>
+//                 <span>{uploadProgress}%</span>
+//               </div>
+//               <div className="w-full bg-gray-200 rounded-full h-2">
+//                 <div
+//                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+//                   style={{ width: `${uploadProgress}%` }}
+//                 />
+//               </div>
+//             </div>
+//           )}
+//         </div>
+
+//         {/* Footer Actions */}
+//         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+//           {/* <button
+//             onClick={() => handleSubmit('draft')}
+//             disabled={isUploading}
+//             className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+//           >
+//             Save as draft
+//           </button> */}
+//           {/* <button
+//             onClick={() => handleSubmit('schedule')}
+//             disabled={isUploading}
+//             className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+//           >
+//             <CalendarIcon className="h-4 w-4" />
+//             Schedule
+//           </button> */}
+//           <button
+//             onClick={() => handleSubmit("upload")}
+//             disabled={isUploading}
+//             className="px-4 py-2 text-white bg-gray-800 rounded-lg hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+//           >
+//             Upload
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+"use client";
+
+import { useState, useCallback, useRef } from "react";
+import { CalendarDate } from "@internationalized/date";
+import {
+  XMarkIcon,
+  FolderIcon,
+  LinkIcon,
+  PhotoIcon,
+  VideoCameraIcon,
+} from "@heroicons/react/24/outline";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Input,
+  Textarea,
+  Select,
+  SelectItem,
+  Button,
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Progress,
+} from "@heroui/react";
+import { DatePicker } from "@heroui/date-picker";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -173,48 +1075,54 @@ interface UploadModalProps {
 interface UploadFormData {
   title: string;
   description: string;
-  visibility: 'private' | 'public' | 'team';
+  visibility: "private" | "public" | "team";
   tags: string[];
-  scheduledDate?: string;
+  scheduledDate: string;
 }
 
 interface LinkFormData {
   title: string;
   description: string;
   url: string;
-  visibility: 'private' | 'public' | 'team';
+  visibility: "private" | "public" | "team";
   tags: string[];
-  scheduledDate?: string;
+  scheduledDate: string;
 }
 
-export default function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalProps) {
+export default function UploadModal({
+  isOpen,
+  onClose,
+  onUploadSuccess,
+}: UploadModalProps) {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'file' | 'link'>('file');
+  const [activeTab, setActiveTab] = useState<"file" | "link">("file");
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
-  // File upload form data
+
+  // DatePicker state for file
+  const [fileDateValue, setFileDateValue] = useState<CalendarDate | null>(null);
   const [fileFormData, setFileFormData] = useState<UploadFormData>({
-    title: '',
-    description: '',
-    visibility: 'private',
+    title: "",
+    description: "",
+    visibility: "private",
     tags: [],
-    scheduledDate: ''
+    scheduledDate: "",
   });
-  
-  // Link upload form data
+
+  // DatePicker state for link
+  const [linkDateValue, setLinkDateValue] = useState<CalendarDate | null>(null);
   const [linkFormData, setLinkFormData] = useState<LinkFormData>({
-    title: '',
-    description: '',
-    url: '',
-    visibility: 'private',
+    title: "",
+    description: "",
+    url: "",
+    visibility: "private",
     tags: [],
-    scheduledDate: ''
+    scheduledDate: "",
   });
-  
-  const [tagInput, setTagInput] = useState('');
+
+  const [tagInput, setTagInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -230,306 +1138,201 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
     const files = Array.from(e.dataTransfer.files);
-    // if (files.length > 0) {
-    //   handleFileSelect(files[0]);
-    // }
+    if (files.length > 0) handleFileSelect(files[0]);
   }, []);
 
   const handleFileSelect = (file: File) => {
-    // Check file size (4MB limit as shown in design)
-    // if (file.size > 4 * 1024 * 1024) {
-    //   alert('File size must be less than 4MB');
-    //   return;
-    // }
-
-    // Check file type (images and videos)
-    // const validTypes = ['image/', 'video/'];
-    // if (!validTypes.some(type => file.type.startsWith(type))) {
-    //   alert('Please select an image or video file');
-    //   return;
-    // }
-
-    // setSelectedFile(file);
-    
-    // Auto-fill title if empty
-    // if (!fileFormData.title) {
-    //   const fileName = file.name.replace(/\.[^/.]+$/, '');
-    //   setFileFormData(prev => ({ ...prev, title: fileName }));
-    // }
+    const validTypes = [
+      "image/",
+      "video/",
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ];
+    if (!validTypes.some((type) => file.type.startsWith(type))) {
+      alert("Please select an appropriate file type");
+      return;
+    }
+    setSelectedFile(file);
+    if (!fileFormData.title) {
+      const fileName = file.name.replace(/\.[^/.]+$/, "");
+      setFileFormData((prev) => ({ ...prev, title: fileName }));
+    }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // handleFileSelect(file);
+    if (file) handleFileSelect(file);
+  };
+
+  const handleTagAdd = (formType: "file" | "link") => {
+    if (!tagInput.trim()) return;
+    const maxTags = 20;
+    const currentTags =
+      formType === "file" ? fileFormData.tags : linkFormData.tags;
+    if (currentTags.length >= maxTags) {
+      alert(`Maximum ${maxTags} tags allowed`);
+      return;
+    }
+    if (formType === "file") {
+      setFileFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()],
+      }));
+    } else {
+      setLinkFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()],
+      }));
+    }
+    setTagInput("");
+  };
+
+  const handleTagRemove = (tag: string, formType: "file" | "link") => {
+    if (formType === "file") {
+      setFileFormData((prev) => ({
+        ...prev,
+        tags: prev.tags.filter((t) => t !== tag),
+      }));
+    } else {
+      setLinkFormData((prev) => ({
+        ...prev,
+        tags: prev.tags.filter((t) => t !== tag),
+      }));
     }
   };
 
-  const handleTagAdd = (formType: 'file' | 'link') => {
-    if (tagInput.trim()) {
-      const maxTags = 20;
-      const currentTags = formType === 'file' ? fileFormData.tags : linkFormData.tags;
-      
-      if (currentTags.length >= maxTags) {
-        alert(`Maximum ${maxTags} tags allowed`);
+  const handleSubmit = async () => {
+    if (activeTab === "file") {
+      if (!selectedFile || !fileFormData.title.trim()) {
+        alert("Please select a file and provide a title");
         return;
       }
-      
-      if (formType === 'file') {
-        setFileFormData(prev => ({
-          ...prev,
-          tags: [...prev.tags, tagInput.trim()]
-        }));
-      } else {
-        setLinkFormData(prev => ({
-          ...prev,
-          tags: [...prev.tags, tagInput.trim()]
-        }));
+      if (!user) {
+        alert("Please sign in to upload files");
+        return;
       }
-      setTagInput('');
-    }
-  };
-
-  const handleTagRemove = (tagToRemove: string, formType: 'file' | 'link') => {
-    if (formType === 'file') {
-      setFileFormData(prev => ({
-        ...prev,
-        tags: prev.tags.filter(tag => tag !== tagToRemove)
-      }));
-    } else {
-      setLinkFormData(prev => ({
-        ...prev,
-        tags: prev.tags.filter(tag => tag !== tagToRemove)
-      }));
-    }
-  };
-
-  const handleTagInputKeyPress = (e: React.KeyboardEvent, formType: 'file' | 'link') => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleTagAdd(formType);
-    }
-  };
-
-  const handleFileUpload = async (action: 'schedule' | 'share') => {
-    if (!selectedFile || !fileFormData.title.trim()) {
-      alert('Please select a file and provide a title');
-      return;
-    }
-
-    if (!user) {
-      alert('Please sign in to upload files');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('file', selectedFile);
-      formDataToSend.append('title', fileFormData.title);
-      formDataToSend.append('description', fileFormData.description);
-      formDataToSend.append('owner_id', user.id);
-      formDataToSend.append('visibility', fileFormData.visibility);
-      if (fileFormData.scheduledDate) {
-        formDataToSend.append('scheduled_date', fileFormData.scheduledDate);
-      }
-
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('surfe_access_token')}`
-        },
-        body: formDataToSend
-      });
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        // Add scheduled date to the upload result if it exists
-        const uploadWithDate = {
-          ...result.upload,
-          scheduled_date: fileFormData.scheduledDate || null
-        };
-        onUploadSuccess?.(uploadWithDate);
-        onClose();
-        // Reset form
-        setSelectedFile(null);
-        setFileFormData({
-          title: '',
-          description: '',
-          visibility: 'private',
-          tags: [],
-          scheduledDate: ''
-        });
-        setTagInput('');
-      } else {
-        throw new Error(result.error || 'Upload failed');
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
-      setIsUploading(false);
+      setIsUploading(true);
       setUploadProgress(0);
-    }
-  };
-
-  const handleLinkUpload = async (action: 'share') => {
-    if (!linkFormData.url.trim() || !linkFormData.title.trim()) {
-      alert('Please provide a URL and title');
-      return;
-    }
-
-    if (!user) {
-      alert('Please sign in to upload links');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    try {
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
+      try {
+        const formDataToSend = new FormData();
+        formDataToSend.append("file", selectedFile);
+        formDataToSend.append("title", fileFormData.title);
+        formDataToSend.append("description", fileFormData.description);
+        formDataToSend.append("owner_id", user.id);
+        formDataToSend.append("visibility", fileFormData.visibility);
+        if (fileFormData.scheduledDate) {
+          formDataToSend.append("scheduled_date", fileFormData.scheduledDate);
+        }
+        formDataToSend.append("tags", JSON.stringify(fileFormData.tags));
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/upload/file`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(
+                "surfe_access_token"
+              )}`,
+            },
+            body: formDataToSend,
           }
-          return prev + 10;
-        });
-      }, 200);
-
-      // TODO: Implement link upload endpoint
-      // For now, simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      // Simulate success response
-      const mockUpload = {
-        id: Date.now().toString(),
-        title: linkFormData.title,
-        description: linkFormData.description,
-        url: linkFormData.url,
-        visibility: linkFormData.visibility,
-        scheduled_date: linkFormData.scheduledDate || null,
-        created_at: new Date().toISOString()
-      };
-
-      onUploadSuccess?.(mockUpload);
-      onClose();
-      
-      // Reset form
-      setLinkFormData({
-        title: '',
-        description: '',
-        url: '',
-        visibility: 'private',
-        tags: [],
-        scheduledDate: ''
-      });
-      setTagInput('');
-    } catch (error) {
-      console.error('Link upload error:', error);
-      alert('Link upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
-  const handleSubmit = async (action: 'share') => {
-    if (activeTab === 'file') {
-      await handleFileUpload(action);
+        );
+        const result = await response.json();
+        if (result.success) {
+          onUploadSuccess?.(result.upload);
+          onClose();
+        } else {
+          throw new Error(result.error || "Upload failed");
+        }
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
     } else {
-      await handleLinkUpload(action);
+      if (!linkFormData.url.trim() || !linkFormData.title.trim()) {
+        alert("Please provide a URL and a title");
+        return;
+      }
+      if (!user) {
+        alert("Please sign in to upload links");
+        return;
+      }
+      setIsUploading(true);
+      setUploadProgress(0);
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/upload/link`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(
+                "surfe_access_token"
+              )}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(linkFormData),
+          }
+        );
+        const result = await response.json();
+        if (result.success) {
+          onUploadSuccess?.(result.upload);
+          onClose();
+        } else {
+          throw new Error(result.error || "Upload failed");
+        }
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
     }
   };
-
-  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Upload Section</h2>
-            <p className="text-sm text-gray-600 mt-1">Upload files or add links to upload.</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('file')}
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'file'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <FolderIcon className="h-5 w-5" />
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      size="2xl"
+      scrollBehavior="inside"
+      placement="center"
+      backdrop="blur"
+    >
+      <ModalContent>
+        <ModalHeader className="flex flex-col gap-1">
+          <h2 className="text-xl font-semibold">Upload Section</h2>
+          <p className="text-sm text-gray-600">Upload files or add links.</p>
+        </ModalHeader>
+        <ModalBody className="gap-6">
+          <div className="flex gap-2">
+            <Button
+              variant={activeTab === "file" ? "solid" : "bordered"}
+              color={activeTab === "file" ? "primary" : "default"}
+              onPress={() => setActiveTab("file")}
+              startContent={<FolderIcon className="h-4 w-4" />}
+            >
               File Upload
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('link')}
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'link'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <LinkIcon className="h-5 w-5" />
+            </Button>
+            <Button
+              variant={activeTab === "link" ? "solid" : "bordered"}
+              color={activeTab === "link" ? "primary" : "default"}
+              onPress={() => setActiveTab("link")}
+              startContent={<LinkIcon className="h-4 w-4" />}
+            >
               Link Upload
-            </div>
-          </button>
-        </div>
+            </Button>
+          </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* File Upload Section */}
-          {activeTab === 'file' && (
-            <>
-              {/* Upload Area */}
+          {activeTab === "file" && (
+            <div className="space-y-6">
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                  isDragging 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400'
+                  isDragging
+                    ? "border-primary bg-primary-50"
+                    : "border-gray-300 hover:border-gray-400"
                 }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -539,330 +1342,250 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                   <div className="space-y-4">
                     <div className="flex items-center justify-center">
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                        {selectedFile.type.startsWith('image/') ? (
+                        {selectedFile.type.startsWith("image/") ? (
                           <PhotoIcon className="h-8 w-8 text-gray-600" />
                         ) : (
                           <VideoCameraIcon className="h-8 w-8 text-gray-600" />
                         )}
                       </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedFile(null)}
-                      className="text-sm text-red-600 hover:text-red-700 underline"
+                    <p className="text-sm font-medium">{selectedFile.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <Button
+                      color="danger"
+                      variant="light"
+                      size="sm"
+                      onPress={() => setSelectedFile(null)}
                     >
                       Remove file
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex justify-center">
-                      <FolderIcon className="h-12 w-12 text-gray-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Upload an image or video</p>
-                      <p className="text-xs text-gray-500">or, click to <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="text-sm text-blue-600 hover:text-blue-700 underline"
-                    >
-                      Browse files
-                    </button></p>
-                    </div>
+                    <FolderIcon className="h-12 w-12 text-gray-400 mx-auto" />
+                    <p className="text-sm font-medium">
+                      Upload an image or video
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      <Button
+                        variant="light"
+                        size="sm"
+                        onPress={() => fileInputRef.current?.click()}
+                      >
+                        Browse files
+                      </Button>
+                    </p>
                   </div>
                 )}
-                
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*,video/*,.pdf,.docx,.pptx"
                   onChange={handleFileInputChange}
                   className="hidden"
                 />
               </div>
 
-              {/* File Form Fields */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    File name
-                  </label>
-                  <input
-                    type="text"
-                    value={fileFormData.title}
-                    onChange={(e) => setFileFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Enter File name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                <Input
+                  label="File name"
+                  placeholder="Enter file name"
+                  value={fileFormData.title}
+                  onValueChange={(v) =>
+                    setFileFormData((p) => ({ ...p, title: v }))
+                  }
+                  isRequired
+                />
+                <Select
+                  label="Visibility"
+                  selectedKeys={new Set([fileFormData.visibility])}
+                  onSelectionChange={(keys) =>
+                    setFileFormData((p) => ({
+                      ...p,
+                      visibility: Array.from(keys)[0] as any,
+                    }))
+                  }
+                >
+                  <SelectItem key="private">Private</SelectItem>
+                  <SelectItem key="team">Team</SelectItem>
+                  <SelectItem key="public">Public</SelectItem>
+                </Select>
+              </div>
+
+              <Textarea
+                label="Description"
+                placeholder="Describe your file details..."
+                value={fileFormData.description}
+                onValueChange={(v) =>
+                  setFileFormData((p) => ({ ...p, description: v }))
+                }
+                isRequired={false}
+              />
+
+              <DatePicker
+                label="Upload Date"
+                value={fileDateValue ?? undefined}
+                onChange={(date) => {
+                  setFileDateValue(date);
+                  const iso = `${date.year}-${String(date.month).padStart(
+                    2,
+                    "0"
+                  )}-${String(date.day).padStart(2, "0")}`;
+                  setFileFormData((p) => ({ ...p, scheduledDate: iso }));
+                }}
+              />
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Add tags</label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type to search..."
+                    value={tagInput}
+                    onValueChange={setTagInput}
+                    onKeyDown={(e) => e.key === "Enter" && handleTagAdd("file")}
+                    className="flex-1"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Visibility
-                  </label>
-                  <select
-                    value={fileFormData.visibility}
-                    onChange={(e) => setFileFormData(prev => ({ ...prev, visibility: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  <Button
+                    onPress={() => handleTagAdd("file")}
+                    variant="bordered"
                   >
-                    <option value="private">Private</option>
-                    <option value="team">Team</option>
-                    <option value="public">Public</option>
-                  </select>
+                    Add
+                  </Button>
                 </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={fileFormData.description}
-                  onChange={(e) => setFileFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your file details..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              {/* Scheduled Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date
-                </label>
-                <DatePicker
-                  value={fileFormData.scheduledDate}
-                  onChange={(date) => setFileFormData(prev => ({ ...prev, scheduledDate: date }))}
-                  placeholder="Select date to upload"
-                />
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Add tags
-                </label>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyPress={(e) => handleTagInputKeyPress(e, 'file')}
-                      placeholder="Type to search..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      onClick={() => handleTagAdd('file')}
-                      disabled={!tagInput.trim() || fileFormData.tags.length >= 20}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                <div className="flex flex-wrap gap-2">
+                  {fileFormData.tags.map((tag, i) => (
+                    <Chip
+                      key={i}
+                      variant="flat"
+                      size="sm"
+                      onClose={() => handleTagRemove(tag, "file")}
                     >
-                      Add
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-wrap gap-2">
-                      {fileFormData.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                        >
-                          + {tag}
-                          <button
-                            onClick={() => handleTagRemove(tag, 'file')}
-                            className="text-gray-500 hover:text-gray-700 ml-1"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {20 - fileFormData.tags.length} tags remaining
-                    </span>
-                  </div>
+                      {tag}
+                    </Chip>
+                  ))}
                 </div>
               </div>
-            </>
+            </div>
           )}
 
-          {/* Link Upload Section */}
-          {activeTab === 'link' && (
-            <>
-              {/* Link Input */}
+          {activeTab === "link" && (
+            <div className="space-y-6">
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <div className="space-y-4">
-                  <div className="flex justify-center">
-                    <LinkIcon className="h-12 w-12 text-gray-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Add a link</p>
-                    <p className="text-xs text-gray-500">Enter a URL to for anything you want to upload.</p>
-                  </div>
-                  <div className="max-w-md mx-auto">
-                    <input
-                      type="url"
-                      value={linkFormData.url}
-                      onChange={(e) => setLinkFormData(prev => ({ ...prev, url: e.target.value }))}
-                      placeholder="https://example.com"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
+                <LinkIcon className="h-12 w-12 text-gray-400 mx-auto" />
+                <Input
+                  type="url"
+                  placeholder="https://example.com"
+                  value={linkFormData.url}
+                  onValueChange={(v) =>
+                    setLinkFormData((p) => ({ ...p, url: v }))
+                  }
+                  isRequired
+                />
               </div>
 
-              {/* Link Form Fields */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    File name
-                  </label>
-                  <input
-                    type="text"
-                    value={linkFormData.title}
-                    onChange={(e) => setLinkFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Enter file name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                <Input
+                  label="Title"
+                  placeholder="Enter title"
+                  value={linkFormData.title}
+                  onValueChange={(v) =>
+                    setLinkFormData((p) => ({ ...p, title: v }))
+                  }
+                  isRequired
+                />
+                <Select
+                  label="Visibility"
+                  selectedKeys={new Set([linkFormData.visibility])}
+                  onSelectionChange={(keys) =>
+                    setLinkFormData((p) => ({
+                      ...p,
+                      visibility: Array.from(keys)[0] as any,
+                    }))
+                  }
+                >
+                  <SelectItem key="private">Private</SelectItem>
+                  <SelectItem key="team">Team</SelectItem>
+                  <SelectItem key="public">Public</SelectItem>
+                </Select>
+              </div>
+
+              <Textarea
+                label="Description"
+                placeholder="Describe the link..."
+                value={linkFormData.description}
+                onValueChange={(v) =>
+                  setLinkFormData((p) => ({ ...p, description: v }))
+                }
+                isRequired={false}
+              />
+
+              <DatePicker
+                label="Upload Date"
+                value={linkDateValue ?? undefined}
+                onChange={(date) => {
+                  setLinkDateValue(date);
+                  const iso = `${date.year}-${String(date.month).padStart(
+                    2,
+                    "0"
+                  )}-${String(date.day).padStart(2, "0")}`;
+                  setLinkFormData((p) => ({ ...p, scheduledDate: iso }));
+                }}
+              />
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Add tags</label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type to search..."
+                    value={tagInput}
+                    onValueChange={setTagInput}
+                    onKeyDown={(e) => e.key === "Enter" && handleTagAdd("link")}
+                    className="flex-1"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Visibility
-                  </label>
-                  <select
-                    value={linkFormData.visibility}
-                    onChange={(e) => setLinkFormData(prev => ({ ...prev, visibility: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  <Button
+                    onPress={() => handleTagAdd("link")}
+                    variant="bordered"
                   >
-                    <option value="private">Private</option>
-                    <option value="team">Team</option>
-                    <option value="public">Public</option>
-                  </select>
+                    Add
+                  </Button>
                 </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={linkFormData.description}
-                  onChange={(e) => setLinkFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your file in details..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              {/* Scheduled Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date
-                </label>
-                <DatePicker
-                  value={linkFormData.scheduledDate}
-                  onChange={(date) => setLinkFormData(prev => ({ ...prev, scheduledDate: date }))}
-                  placeholder="Select date to upload"
-                />
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Add tags
-                </label>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyPress={(e) => handleTagInputKeyPress(e, 'link')}
-                      placeholder="Type to search..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      onClick={() => handleTagAdd('link')}
-                      disabled={!tagInput.trim() || linkFormData.tags.length >= 20}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                <div className="flex flex-wrap gap-2">
+                  {linkFormData.tags.map((tag, i) => (
+                    <Chip
+                      key={i}
+                      variant="flat"
+                      size="sm"
+                      onClose={() => handleTagRemove(tag, "link")}
                     >
-                      Add
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-wrap gap-2">
-                      {linkFormData.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                        >
-                          + {tag}
-                          <button
-                            onClick={() => handleTagRemove(tag, 'link')}
-                            className="text-gray-500 hover:text-gray-700 ml-1"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {20 - linkFormData.tags.length} tags remaining
-                    </span>
-                  </div>
+                      {tag}
+                    </Chip>
+                  ))}
                 </div>
               </div>
-            </>
+            </div>
           )}
 
-          {/* Upload Progress */}
           {isUploading && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Uploading...</span>
                 <span>{uploadProgress}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
+              <Progress value={uploadProgress} />
             </div>
           )}
-        </div>
-
-        {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-          {/* <button
-            onClick={() => handleSubmit('draft')}
-            disabled={isUploading}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Save as draft
-          </button> */}
-          {/* <button
-            onClick={() => handleSubmit('schedule')}
-            disabled={isUploading}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            <CalendarIcon className="h-4 w-4" />
-            Schedule
-          </button> */}
-          <button
-            onClick={() => handleSubmit('share')}
-            disabled={isUploading}
-            className="px-4 py-2 text-white bg-gray-800 rounded-lg hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="light" color="danger" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button onPress={handleSubmit} isLoading={isUploading}>
             Upload
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }
