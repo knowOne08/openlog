@@ -29,8 +29,9 @@ router.post('/file', upload.single('file'), async (req, res) => {
 // POST /api/v1/upload/link
 router.post('/link', async (req, res) => {
     try {
-        const { title, description, url, owner_id, visibility } = req.body;
-        tags = JSON.parse(req.body.tags || "[]");
+        const { title, description, url, owner_id, visibility, tags } = req.body;
+        console.log(tags);
+        // tags = JSON.parse(tags || "[]");
         if (!title || !url || !owner_id || !visibility || !tags) {
             return res.status(400).json({ error: 'Missing required fields' });
         }

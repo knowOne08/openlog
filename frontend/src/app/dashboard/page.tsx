@@ -1,11 +1,21 @@
-'use client';
+"use client";
 
-import { useRequireAuth } from '@/hooks/useAuth';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/auth/FormComponents';
-import { useState } from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
-import UploadModal from '@/components/upload/UploadModal';
+import { useRequireAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
+import Swal from "sweetalert2";
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Avatar,
+  Chip,
+  Spinner,
+  Divider,
+} from "@heroui/react";
+import { PlusIcon } from "@heroicons/react/24/outline";
+import UploadModal from "@/components/upload/UploadModal";
 
 export default function DashboardPage() {
   const { isAuthenticated, isLoading } = useRequireAuth();
@@ -14,10 +24,10 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Spinner size="lg" color="primary" />
+          <p className="text-foreground-600">Loading...</p>
         </div>
       </div>
     );
@@ -28,28 +38,25 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-content1 shadow-sm border-b border-divider">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-teal-800">Dashboard</h1>
+              <h1 className="text-2xl text-foreground">Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors"
-              >
-                <PlusIcon className="h-5 w-5 mr-2" />
-                Upload
-              </button>
-              <span className="text-gray-700">Welcome, {user?.name}</span>
               <Button
-                onClick={logout}
-                variant="outline"
-                className="w-auto px-4"
+                onPress={() => setIsUploadModalOpen(true)}
+                className="bg-foreground text-background hover:bg-foreground/90"
+                startContent={<PlusIcon className="h-5 w-5" />}
+                size="sm"
               >
+                Upload
+              </Button>
+              {/* <span className="text-foreground-700">Welcome, {user?.name}</span> */}
+              <Button onPress={logout} variant="bordered" size="sm">
                 Logout
               </Button>
             </div>
@@ -62,110 +69,147 @@ export default function DashboardPage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* User Profile Card */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="h-12 w-12 rounded-full bg-teal-100 flex items-center justify-center">
-                      <span className="text-xl font-semibold text-teal-600">
-                        {user?.name?.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-gray-900">{user?.name}</h3>
-                    <p className="text-sm text-gray-500">{user?.email}</p>
+            <Card className="shadow-medium">
+              <CardBody className="p-6">
+                <div className="flex items-center space-x-4">
+                  <Avatar
+                    name={user?.name}
+                    size="lg"
+                    className="bg-primary-100 text-primary-600"
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-foreground">
+                      {user?.name}
+                    </h3>
+                    <p className="text-sm text-foreground-500">{user?.email}</p>
                   </div>
                 </div>
-                <div className="mt-4">
-                  <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+
+                <Divider className="my-4" />
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <dt className="text-sm font-medium text-gray-500">Role</dt>
-                      <dd className="mt-1 text-sm text-gray-900 capitalize">{user?.role}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">Team</dt>
-                      <dd className="mt-1 text-sm text-gray-900 capitalize">{user?.team}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">Status</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user?.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user?.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                      <dt className="text-sm font-medium text-foreground-500">
+                        Role
+                      </dt>
+                      <dd className="mt-1 text-sm text-foreground capitalize">
+                        {user?.role}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-sm font-medium text-gray-500">Member Since</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                      <dt className="text-sm font-medium text-foreground-500">
+                        Team
+                      </dt>
+                      <dd className="mt-1 text-sm text-foreground capitalize">
+                        {user?.team}
                       </dd>
                     </div>
-                  </dl>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-foreground-500">
+                        Status
+                      </dt>
+                      <dd className="mt-1">
+                        <Chip
+                          color={user?.is_active ? "success" : "danger"}
+                          variant="flat"
+                          size="sm"
+                        >
+                          {user?.is_active ? "Active" : "Inactive"}
+                        </Chip>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-foreground-500">
+                        Member Since
+                      </dt>
+                      <dd className="mt-1 text-sm text-foreground">
+                        {user?.created_at
+                          ? new Date(user.created_at).toLocaleDateString()
+                          : "N/A"}
+                      </dd>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
 
             {/* Quick Actions Card */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+            <Card className="shadow-medium">
+              <CardHeader className="pb-2">
+                <h3 className="text-lg font-medium text-foreground">
+                  Quick Actions
+                </h3>
+              </CardHeader>
+              <CardBody className="pt-2">
                 <div className="space-y-3">
                   <Button
-                    onClick={() => console.log('Change password clicked')}
-                    variant="outline"
-                    className="w-full"
+                    onPress={() => console.log("Change password clicked")}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="md"
                   >
                     Change Password
                   </Button>
                   <Button
-                    onClick={() => console.log('View profile clicked')}
-                    variant="outline"
-                    className="w-full"
+                    onPress={() => console.log("View profile clicked")}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="md"
                   >
                     View Profile
                   </Button>
                   <Button
-                    onClick={() => console.log('Settings clicked')}
-                    variant="outline"
-                    className="w-full"
+                    onPress={() => console.log("Settings clicked")}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="md"
                   >
                     Settings
                   </Button>
                 </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
 
             {/* System Status Card */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">System Status</h3>
-                <div className="space-y-3">
+            <Card className="shadow-medium">
+              <CardHeader className="pb-2">
+                <h3 className="text-lg font-medium text-foreground">
+                  System Status
+                </h3>
+              </CardHeader>
+              <CardBody className="pt-2">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Backend API</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="text-sm text-foreground-500">
+                      Backend API
+                    </span>
+                    <Chip color="success" variant="flat" size="sm">
                       Online
-                    </span>
+                    </Chip>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Database</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="text-sm text-foreground-500">
+                      Database
+                    </span>
+                    <Chip color="success" variant="flat" size="sm">
                       Connected
-                    </span>
+                    </Chip>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Authentication</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Active
+                    <span className="text-sm text-foreground-500">
+                      Authentication
                     </span>
+                    <Chip color="success" variant="flat" size="sm">
+                      Active
+                    </Chip>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
           </div>
         </div>
       </main>
@@ -174,12 +218,36 @@ export default function DashboardPage() {
       <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        onUploadSuccess={(upload) => {
-          console.log('Upload successful:', upload);
+        onUploadSuccess={() => {
+          const Toast = Swal.mixin({
+            toast: true,
+            position: "bottom-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            iconColor: "white",
+            didOpen: (toast) => {
+              toast.onmouseenter = Swal.stopTimer;
+              toast.onmouseleave = Swal.resumeTimer;
+            },
+            customClass: {
+              // Add Tailwind classes to the toast elements
+              // The '!important' modifier is crucial to override SweetAlert2's default styles
+              popup: "!rounded-md !bg-emerald-600 !p-2 !text-white !shadow-lg",
+              title: "!text-white !font-medium",
+              timerProgressBar: "!bg-emerald-200",
+            },
+          });
+
+          // Call the styled toast
+          Toast.fire({
+            icon: "success",
+            title: "Upload successful!",
+          });
+          // alert("Upload Successful!");
           // You can add logic here to refresh the dashboard or show a success message
         }}
       />
     </div>
   );
 }
-
