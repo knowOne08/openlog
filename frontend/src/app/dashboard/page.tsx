@@ -26,8 +26,8 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
-          <Spinner size="lg" color="primary" />
-          <p className="text-foreground-600">Loading...</p>
+          <Spinner size="lg" color="default" />
+          <p className="text-foreground-700">Loading...</p>
         </div>
       </div>
     );

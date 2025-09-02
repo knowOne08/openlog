@@ -69,7 +69,7 @@ app.get('/health', (req, res) => {
 // API Routes
 import authRoutes from './routes/auth.js';
 import uploadRoutes from './routes/upload.js';
-// const searchRoutes = require('./routes/search');
+import searchRoutes from './routes/search.js';
 
 // Mount routes
 app.use('/api/v1/auth', authRoutes);
@@ -99,10 +99,10 @@ app.get('/api/v1', (req, res) => {
                 file: 'POST /api/v1/upload/file',
                 link: 'POST /api/v1/upload/link'
             },
-            // search: {
-            //   query: 'GET /api/v1/search',
-            //   suggestions: 'GET /api/v1/search/suggestions'
-            // }
+            search: {
+                query: 'GET /api/v1/search',
+                suggestions: 'GET /api/v1/search/suggestions'
+            }
         },
         documentation: 'https://docs.openlog.com'
     });

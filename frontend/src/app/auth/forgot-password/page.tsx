@@ -1,24 +1,37 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { LockClosedIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
+import { useState } from "react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Input,
+  Button,
+  Link,
+  Divider,
+  Image,
+} from "@heroui/react";
+import {
+  LockFilledIcon,
+  ChevronLeftIcon,
+  MailFilledIcon,
+} from "@heroui/shared-icons";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       // TODO: Implement password reset logic with backend
-      console.log('Password reset requested for:', email);
+      console.log("Password reset requested for:", email);
       setIsSubmitted(true);
     } catch (error) {
-      console.error('Password reset error:', error);
+      console.error("Password reset error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -26,133 +39,140 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-sm text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-            <LockClosedIcon className="h-6 w-6 text-green-600" />
-          </div>
-          
-          <h2 className="text-2xl font-bold text-teal-800">
-            Check your email
-          </h2>
-          
-          <p className="text-sm text-gray-600">
-            We've sent a password reset link to <strong>{email}</strong>
-          </p>
-          
-          <p className="text-xs text-gray-500">
-            Didn't receive the email? Check your spam folder or{' '}
-            <button
-              onClick={() => setIsSubmitted(false)}
-              className="text-teal-600 hover:text-teal-500 underline"
-            >
-              try again
-            </button>
-          </p>
-          
-          <div className="pt-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardBody className="text-center space-y-6 p-8">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full">
+              <MailFilledIcon className="h-8 w-8 text-success-600" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-default-800">
+                Check your email
+              </h2>
+              <p className="text-sm text-default-600">
+                We&apos;ve sent a password reset link to{" "}
+                <span className="font-semibold">{email}</span>
+              </p>
+            </div>
+
+            <p className="text-xs text-default-500">
+              Didn&apos;t receive the email? Check your spam folder or{" "}
+              <Button
+                variant="light"
+                size="sm"
+                className="p-0 h-auto min-w-0 text-primary underline"
+                onPress={() => setIsSubmitted(false)}
+              >
+                try again
+              </Button>
+            </p>
+
+            <Divider />
+
             <Link
               href="/auth/signin"
-              className="inline-flex items-center text-sm text-teal-600 hover:text-teal-500"
+              className="inline-flex items-center text-sm text-primary"
+              underline="hover"
             >
-              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+              <ChevronLeftIcon className="h-4 w-4 mr-1" />
               Back to sign in
             </Link>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen flex">
       {/* Left Panel - Authentication Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-sm relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-0 left-0 w-32 h-32 text-6xl text-gray-400">*</div>
-            <div className="absolute inset-0" style={{
-              backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)',
-              backgroundSize: '20px 20px'
-            }}></div>
-          </div>
-          
-          {/* Form Content */}
-          <div className="relative z-10">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="text-4xl font-bold text-gray-800 mb-4">*</div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                Reset your password
-              </h2>
-              <p className="mt-2 text-sm text-gray-600">
-                Enter your email address and we'll send you a link to reset your password.
-              </p>
-            </div>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full shadow-none">
+          <CardHeader className="flex flex-col items-center pb-0 pt-8">
+            <div className="text-4xl font-bold text-default-800 mb-4">*</div>
+            <h2 className="text-2xl font-bold text-default-800 text-center">
+              Reset your password
+            </h2>
+            <p className="text-sm text-default-600 text-center mt-2">
+              Enter your email address and we&apos;ll send you a link to reset
+              your password.
+            </p>
+          </CardHeader>
 
-          {/* Password Reset Form */}
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
+          <CardBody className="pt-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <Input
                 type="email"
-                autoComplete="email"
-                required
+                label="Email"
+                variant="bordered"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-gray-500 focus:border-gray-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your email address"
+                onValueChange={setEmail}
+                isRequired
+                classNames={{
+                  input: "text-sm",
+                  label: "text-sm font-medium",
+                }}
               />
+
+              <Button
+                type="submit"
+                color="default"
+                size="lg"
+                className="w-full bg-default-900 text-white font-medium"
+                isLoading={isLoading}
+                spinner={
+                  <svg
+                    className="animate-spin h-5 w-5 text-current"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                }
+              >
+                {isLoading ? "Sending..." : "Send reset link"}
+              </Button>
+            </form>
+
+            <div className="text-center mt-5">
+              <Link
+                href="/auth/signin"
+                className="inline-flex items-center text-sm text-default-600"
+                underline="hover"
+              >
+                <ChevronLeftIcon className="h-4 w-4 mr-1" />
+                Back to sign in
+              </Link>
             </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Sending...' : 'Send reset link'}
-            </button>
-          </form>
-
-          {/* Back to sign in */}
-          <div className="text-center">
-            <Link
-              href="/auth/signin"
-              className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 underline"
-            >
-              <ArrowLeftIcon className="h-4 w-4 mr-1" />
-              Back to sign in
-            </Link>
-          </div>
-          </div>
-        </div>
+          </CardBody>
+        </Card>
       </div>
 
       {/* Right Panel - Image Placeholder */}
-      <div className="hidden lg:flex lg:flex-1 bg-gray-900 relative">
-        {/* Image Placeholder */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-          <div className="text-center text-white">
-            <div className="text-6xl mb-4">📸</div>
-            <p className="text-lg font-medium">Image Placeholder</p>
-            <p className="text-sm text-gray-300 mt-2">Right section for hero image</p>
-          </div>
-        </div>
-        
-        {/* Navigation Arrows (Placeholder) */}
-        <div className="absolute bottom-8 left-8 text-white text-2xl opacity-50">
-          ←
-        </div>
-        <div className="absolute bottom-8 right-8 text-white text-2xl opacity-50">
-          →
+      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-content1">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Image
+            src="/images/hero_image.jpg"
+            alt="Hero Image"
+            className="w-full h-full object-cover"
+            removeWrapper
+          />
         </div>
       </div>
     </div>
   );
 }
-
