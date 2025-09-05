@@ -270,7 +270,7 @@ export const apiClient = {
 
   get: (endpoint: string) => apiClient.request(endpoint),
   
-  post: (endpoint: string, data: any) => apiClient.request(endpoint, {
+  post: (endpoint: string, data: Record<string, unknown>) => apiClient.request(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -278,7 +278,7 @@ export const apiClient = {
     body: JSON.stringify(data),
   }),
   
-  put: (endpoint: string, data: any) => apiClient.request(endpoint, {
+  put: (endpoint: string, data: Record<string, unknown>) => apiClient.request(endpoint, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

@@ -13,7 +13,7 @@ import { SearchIcon } from "@heroui/shared-icons";
 export default function SearchHomepage() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLInputElement> | KeyboardEvent) => {
     e.preventDefault();
     console.log("Searching for:", searchQuery);
   };

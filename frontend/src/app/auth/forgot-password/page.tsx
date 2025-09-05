@@ -12,7 +12,6 @@ import {
   Image,
 } from "@heroui/react";
 import {
-  LockFilledIcon,
   ChevronLeftIcon,
   MailFilledIcon,
 } from "@heroui/shared-icons";
@@ -22,7 +21,7 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 

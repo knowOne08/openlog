@@ -10,7 +10,6 @@ import {
   Link as HeroUILink,
   Image,
   Spacer,
-  Divider,
 } from "@heroui/react";
 import { EyeFilledIcon, EyeSlashFilledIcon } from "@heroui/shared-icons";
 

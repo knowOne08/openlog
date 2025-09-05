@@ -21,11 +21,6 @@ export function useAuth() {
 
   const router = useRouter();
 
-  // Check authentication status on mount
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
   const checkAuthStatus = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
@@ -46,7 +41,7 @@ export function useAuth() {
           error: null,
         });
       }
-    } catch (error) {
+    } catch {
       setState({
         user: null,
         isAuthenticated: false,
@@ -55,6 +50,11 @@ export function useAuth() {
       });
     }
   }, []);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     try {
@@ -76,7 +76,7 @@ export function useAuth() {
         setState(prev => ({ ...prev, isLoading: false, error: errorMessage }));
         return { success: false, error: errorMessage };
       }
-    } catch (error) {
+    } catch {
       const errorMessage = 'An unexpected error occurred during login';
       setState(prev => ({ ...prev, isLoading: false, error: errorMessage }));
       return { success: false, error: errorMessage };
@@ -98,8 +98,8 @@ export function useAuth() {
       
       // Redirect to login page
       router.push('/auth/signin');
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
+      console.error('Logout error');
       // Even if logout fails, clear local state
       setState({
         user: null,

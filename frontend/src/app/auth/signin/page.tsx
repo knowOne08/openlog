@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useRedirectIfAuthenticated } from "@/hooks/useAuth";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import {
   Card,
   CardBody,
@@ -14,7 +13,6 @@ import {
   Link as HeroUILink,
   Image,
   Spacer,
-  Divider,
 } from "@heroui/react";
 import { EyeFilledIcon, EyeSlashFilledIcon } from "@heroui/shared-icons";
 

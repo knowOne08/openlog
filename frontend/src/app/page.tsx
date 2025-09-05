@@ -11,7 +11,6 @@ import {
   NavbarBrand,
   NavbarContent,
   NavbarItem,
-  Spacer,
 } from "@heroui/react";
 
 export default function Home() {
