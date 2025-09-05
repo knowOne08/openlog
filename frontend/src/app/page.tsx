@@ -37,13 +37,15 @@ export default function Home() {
         transition-all duration-500 ease-in
         ${
           scrolled
-            ? "max-w-md mx-auto mt-4 rounded-full shadow-xl border border-divider bg-background/90"
+            ? "max-w-md mx-auto mt-4 h-1/12 rounded-full shadow-xl border border-divider bg-background/90"
             : "w-full rounded-none shadow-none bg-background/80"
         }
       `}
       >
         <NavbarBrand>
-          <p className="text-2xl text-foreground">OpenLog</p>
+          <p className={`${scrolled} ? text-xl :text-2xl text-foreground`}>
+            OpenLog
+          </p>
         </NavbarBrand>
         <NavbarContent justify="end">
           <NavbarItem>

@@ -175,7 +175,7 @@ export default function DashboardPage() {
             </Card>
 
             {/* System Status Card */}
-            <Card className="shadow-medium">
+            {/* <Card className="shadow-medium">
               <CardHeader className="pb-2">
                 <h3 className="text-lg font-medium text-foreground">
                   System Status
@@ -209,7 +209,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </CardBody>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </main>
