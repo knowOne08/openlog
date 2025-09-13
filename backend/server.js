@@ -25,11 +25,13 @@ if (missingVars.length > 0) {
 
 // CORS configuration
 const corsOptions = {
-    origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:3000'],
+    // origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:3000'],
+    origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
+    // allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with', 'Origin', 'Access-Control-Allow-Origin']
 };
 
 // Rate limiting
@@ -74,7 +76,7 @@ import searchRoutes from './routes/search.js';
 // Mount routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/upload', uploadRoutes);
-// app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/search', searchRoutes);  // Search functionality with semantic and traditional search capabilities
 
 // API Documentation endpoint
 app.get('/api/v1', (req, res) => {
@@ -98,6 +100,9 @@ app.get('/api/v1', (req, res) => {
             upload: {
                 file: 'POST /api/v1/upload/file',
                 link: 'POST /api/v1/upload/link'
+            },
+            search: {
+                query: 'POST /api/v1/search/query'
             },
             search: {
                 query: 'GET /api/v1/search',
@@ -180,7 +185,7 @@ process.on('SIGINT', () => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4000;
 
 const startServer = async () => {
     try {

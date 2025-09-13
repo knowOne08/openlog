@@ -1,6 +1,6 @@
 import { supabaseClient } from '../config/db.js';
 import { uploadFile } from '../utils/minio.js';
-import { upsertEmbedding } from '../utils/qdrant.js';
+import { upsertEmbedding, searchQdrant } from '../utils/qdrant.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // Simulate summary, extraction, embedding generation with dummy functions
@@ -13,9 +13,9 @@ async function generateSummary(text) {
 async function generateEmbedding(summary) {
     return Array.from({ length: 512 }, () => Math.random()); // Replace with real embedding
 }
-async function generateTags(summary) {
-    return ['example', 'tag']; // Replace with actual tag generation
-}
+// async function generateTags(summary) {
+//     return ['example', 'tag']; // Replace with actual tag generation
+// }
 
 async function handleFileMetaData({ title, description, file, ownerId, visibility, tags }) {
     // 1. Upload file to MinIO
@@ -142,4 +142,92 @@ async function handleLinkMetadata({ title, description, url, ownerId, visibility
 }
 
 
-export { handleFileMetaData, handleLinkMetadata };
+/**
+ * Search controller that handles both semantic and traditional search
+ * @param {string} query - The search query
+ * @param {string} type - The type of search: 'semantic', 'traditional', or 'hybrid'
+ * @param {number} limit - Maximum number of results to return
+ * @returns {Promise<Array>} - Search results
+ */
+async function searchController(query, type = 'hybrid', limit = 10) {
+    const results = [];
+
+    try {
+        // For semantic or hybrid search, get vector search results
+        if (type === 'semantic' || type === 'hybrid') {
+            const queryVector = await generateEmbedding(query);
+            const semanticResults = await searchQdrant(queryVector, limit);
+            results.push(...semanticResults);
+        }
+
+        // For traditional or hybrid search, get Supabase full-text search results
+        if (type === 'traditional' || type === 'hybrid') {
+            const searchStartTime = performance.now();
+
+            // Get the tags associated with uploads
+            const { data: tags, error: tagError } = await supabaseClient
+                .from('upload_tags')
+                .select(`
+                    upload_id,
+                    tags:tags(name)
+                `);
+
+            // Create a map of upload_id to tags
+            const tagMap = new Map();
+            tags?.forEach(({ upload_id, tags }) => {
+                if (tags?.name) {
+                    const existingTags = tagMap.get(upload_id) || [];
+                    tagMap.set(upload_id, [...existingTags, tags.name]);
+                }
+            });
+
+            // Search in uploads table
+            const { data: traditionalResults, error } = await supabaseClient
+                .from('uploads')
+                .select('id, title, description, file_type, file_path, external_url, created_at')
+                .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            if (error) throw error;
+
+            const searchEndTime = performance.now();
+            const searchLatency = searchEndTime - searchStartTime;
+            console.log(`Traditional search latency: ${searchLatency}ms`);
+
+            results.push(...traditionalResults.map(doc => ({
+                id: doc.id,
+                score: 1, // Default score for traditional search
+                payload: {
+                    title: doc.title,
+                    description: doc.description,
+                    file_type: doc.file_type,
+                    file_path: doc.file_path,
+                    external_url: doc.external_url,
+                    created_at: doc.created_at,
+                    tags: tagMap.get(doc.id) || [],
+                    searchLatency
+                }
+            })));
+        }
+
+        // For hybrid search, merge and rank results
+        if (type === 'hybrid') {
+            // Remove duplicates and sort by score
+            const uniqueResults = Array.from(new Map(
+                results.map(item => [item.id, item])
+            ).values());
+
+            return uniqueResults
+                .sort((a, b) => b.score - a.score)
+                .slice(0, limit);
+        }
+
+        return results;
+    } catch (error) {
+        console.error('Search controller error:', error);
+        throw error;
+    }
+}
+
+export { handleFileMetaData, handleLinkMetadata, searchController };
