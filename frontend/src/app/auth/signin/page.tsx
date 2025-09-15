@@ -51,7 +51,7 @@ export default function SignInPage() {
               <div className="text-center space-y-2">
                 <div className="text-4xl font-bold text-foreground mb-4">*</div>
                 <h2 className="text-2xl font-bold text-foreground">
-                  Sign into your account
+                  Sign into your account, please
                 </h2>
                 <p className="text-sm text-foreground-500">
                   A Window to your new World.
