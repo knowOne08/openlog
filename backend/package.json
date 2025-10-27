@@ -16,13 +16,18 @@
     "multer": "^2.0.2",
     "uuid": "^11.1.0"
   },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
   "name": "backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "minio-test.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "dev": "nodemon server.js",
+    "prod": "NODE_ENV=production node server.js"
   },
   "keywords": [],
   "author": "",
