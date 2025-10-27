@@ -26,4 +26,19 @@ async function getFileUrl(objectName, expiry = 3600) {
     return minioClient.presignedGetObject(BUCKET, objectName, expiry);
 }
 
-export { uploadFile, getFileUrl };
+/**
+ * Delete a file from MinIO
+ * @param {string} objectName - Name of the file to delete
+ * @returns {Promise<void>}
+ */
+
+async function deleteFile(objectName) {
+    try {
+        await minioClient.removeObject("openlog-test-bucket", objectName);
+    } catch (error) {
+        console.error('MinIO delete error:', error);
+        throw new Error(`MinIO Error: Failed to delete file ${objectName}`);
+    }
+}
+
+export { uploadFile, getFileUrl, deleteFile };

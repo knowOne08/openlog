@@ -11,18 +11,14 @@ import {
   Divider,
   Image,
 } from "@heroui/react";
-import {
-  LockFilledIcon,
-  ChevronLeftIcon,
-  MailFilledIcon,
-} from "@heroui/shared-icons";
+import { ChevronLeftIcon, MailFilledIcon } from "@heroui/shared-icons";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -85,7 +81,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background">
       {/* Left Panel - Authentication Form */}
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="max-w-md w-full shadow-none">

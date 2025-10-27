@@ -1,14 +1,28 @@
 {
-  "name": "openlog-test-data-generator",
+  "name": "excel-uploader",
   "version": "1.0.0",
-  "description": "Test data generator for OpenLog",
+  "description": "Upload data from Excel file to server with Google Drive file support",
   "type": "module",
+  "main": "excelUploader.js",
   "scripts": {
-    "generate": "node generateTestData.js"
+    "start": "node excelUploader.js",
+    "dev": "node --inspect excelUploader.js"
   },
   "dependencies": {
-    "@faker-js/faker": "^8.0.2",
-    "axios": "^1.5.0",
-    "form-data": "^4.0.0"
-  }
+    "axios": "^1.6.0",
+    "form-data": "^4.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "excel",
+    "upload",
+    "google-drive",
+    "file-processing"
+  ]
 }

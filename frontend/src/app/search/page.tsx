@@ -7,18 +7,16 @@ import {
   NavbarBrand,
   NavbarContent,
   NavbarItem,
-  Select,
-  SelectItem,
   Spinner,
   Card,
   CardBody,
   CardHeader,
   CardFooter,
   Link,
+  Switch,
+  Chip,
 } from "@heroui/react";
 import { SearchIcon } from "@heroui/shared-icons";
-
-type DateFilterType = "all" | "today" | "week" | "month";
 
 interface SearchResult {
   id: string;
@@ -42,20 +40,162 @@ interface ApiResponse {
 
 export default function SearchHomepage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState("hybrid");
+  const [isSemanticSearch, setIsSemanticSearch] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState("");
-  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [dateFilter] = useState("all");
+  const [selectedTags] = useState<string[]>([]);
   const [averageLatency, setAverageLatency] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
+  const resultsPerPage = 10;
+
+  const handleSearch = React.useCallback(
+    async (e?: React.FormEvent, loadMore = false) => {
+      e?.preventDefault();
+
+      if (!searchQuery.trim()) {
+        setResults([]);
+        setCurrentPage(1);
+        setHasMore(false);
+        setTotalResults(0);
+        return;
+      }
+
+      setIsLoading(true);
+      setError("");
+
+      // Record start time for latency measurement
+      const startTime = performance.now();
+
+      try {
+        const searchEndpoint = isSemanticSearch
+          ? `${process.env.NEXT_PUBLIC_API_URL}/search/query`
+          : `${process.env.NEXT_PUBLIC_API_URL}/search/traditional`;
+
+        const page = loadMore ? currentPage + 1 : 1;
+
+        const response = await fetch(searchEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: searchQuery,
+            type: isSemanticSearch ? "semantic" : "traditional",
+            limit: resultsPerPage,
+            offset: (page - 1) * resultsPerPage,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Search failed");
+        }
+
+        const data = (await response.json()) as ApiResponse & {
+          total?: number;
+          hasMore?: boolean;
+        };
+
+        // Calculate end-to-end latency
+        const endTime = performance.now();
+        const latency = endTime - startTime;
+
+        // Filter results by date if needed
+        let filteredResults = [...data.results];
+        if (dateFilter !== "all") {
+          const now = new Date();
+          const filterDate = new Date();
+
+          switch (dateFilter) {
+            case "today":
+              filterDate.setHours(0, 0, 0, 0);
+              break;
+            case "week":
+              filterDate.setDate(now.getDate() - 7);
+              break;
+            case "month":
+              filterDate.setMonth(now.getMonth() - 1);
+              break;
+          }
+
+          filteredResults = filteredResults.filter(
+            (result: SearchResult) =>
+              new Date(result.payload.created_at) >= filterDate
+          );
+        }
+
+        // Filter by selected tags if any are selected
+        if (selectedTags.length > 0) {
+          filteredResults = filteredResults.filter((result: SearchResult) => {
+            let tagsArray: string[] = [];
+            try {
+              if (typeof result.payload.tags === "string") {
+                tagsArray = JSON.parse(result.payload.tags);
+              } else if (Array.isArray(result.payload.tags)) {
+                tagsArray = result.payload.tags;
+              }
+            } catch (e) {
+              console.error("Error parsing tags:", e);
+            }
+            return tagsArray.some((tag: string) => selectedTags.includes(tag));
+          });
+        }
+
+        // Calculate average latency including backend processing time
+        const totalLatency = filteredResults.reduce(
+          (sum: number, result: SearchResult) =>
+            sum + (result.payload.searchLatency || 0),
+          0
+        );
+
+        if (filteredResults.length > 0) {
+          setAverageLatency(
+            totalLatency / filteredResults.length +
+              latency / filteredResults.length
+          );
+        } else {
+          setAverageLatency(null);
+        }
+
+        if (loadMore) {
+          setResults((prev) => [...prev, ...filteredResults]);
+          setCurrentPage(page);
+        } else {
+          setResults(filteredResults);
+          setCurrentPage(1);
+        }
+
+        setTotalResults(data.total || filteredResults.length);
+        setHasMore(data.hasMore || filteredResults.length === resultsPerPage);
+      } catch (err) {
+        setError("Failed to perform search. Please try again.");
+        // Only log detailed errors in development
+        if (process.env.NODE_ENV === "development") {
+          console.error("Search error:", err);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [
+      searchQuery,
+      isSemanticSearch,
+      dateFilter,
+      selectedTags,
+      currentPage,
+      resultsPerPage,
+    ]
+  );
 
   // Memoize search function to prevent infinite loop
   const debouncedSearch = React.useCallback(async () => {
     if (searchQuery.trim()) {
       await handleSearch();
     }
-  }, [searchQuery, searchType, dateFilter, selectedTags]);
+  }, [searchQuery, handleSearch]);
 
   // Debounce search function
   useEffect(() => {
@@ -63,99 +203,9 @@ export default function SearchHomepage() {
     return () => clearTimeout(debounceTimeout);
   }, [debouncedSearch]);
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-
-    if (!searchQuery.trim()) {
-      setResults([]);
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
-
-    // Record start time for latency measurement
-    const startTime = performance.now();
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/search/query`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: searchQuery,
-            type: searchType,
-            limit: 20,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Search failed");
-      }
-
-      const data = (await response.json()) as ApiResponse;
-
-      // Calculate end-to-end latency
-      const endTime = performance.now();
-      const latency = endTime - startTime;
-
-      // Filter results by date if needed
-      let filteredResults = [...data.results];
-      if (dateFilter !== "all") {
-        const now = new Date();
-        const filterDate = new Date();
-
-        switch (dateFilter) {
-          case "today":
-            filterDate.setHours(0, 0, 0, 0);
-            break;
-          case "week":
-            filterDate.setDate(now.getDate() - 7);
-            break;
-          case "month":
-            filterDate.setMonth(now.getMonth() - 1);
-            break;
-        }
-
-        filteredResults = filteredResults.filter(
-          (result: SearchResult) =>
-            new Date(result.payload.created_at) >= filterDate
-        );
-      }
-
-      // Filter by selected tags if any are selected
-      if (selectedTags.length > 0) {
-        filteredResults = filteredResults.filter((result: SearchResult) =>
-          result.payload.tags?.some((tag: string) => selectedTags.includes(tag))
-        );
-      }
-
-      // Calculate average latency including backend processing time
-      const totalLatency = filteredResults.reduce(
-        (sum: number, result: SearchResult) =>
-          sum + (result.payload.searchLatency || 0),
-        0
-      );
-
-      if (filteredResults.length > 0) {
-        setAverageLatency(
-          totalLatency / filteredResults.length +
-            latency / filteredResults.length
-        );
-      } else {
-        setAverageLatency(null);
-      }
-
-      setResults(filteredResults);
-    } catch (err) {
-      setError("Failed to perform search. Please try again.");
-      console.error("Search error:", err);
-    } finally {
-      setIsLoading(false);
+  const handleLoadMore = () => {
+    if (!isLoading && hasMore) {
+      handleSearch(undefined, true);
     }
   };
 
@@ -181,7 +231,9 @@ export default function SearchHomepage() {
     return (
       <div className="h-full flex flex-col">
         <div className="border-b border-divider p-4">
-          <h2 className="text-xl font-semibold">{file.payload.title}</h2>
+          <h2 className="text-xl font-semibold text-foreground">
+            {file.payload.title}
+          </h2>
           <div className="flex items-center gap-2 mt-2">
             <span className="text-small text-default-500">
               Score: {(file.score * 100).toFixed(1)}%
@@ -216,7 +268,10 @@ export default function SearchHomepage() {
                       tagsArray = file.payload.tags;
                     }
                   } catch (e) {
-                    console.error("Error parsing tags:", e);
+                    // Silently handle tag parsing errors in production
+                    if (process.env.NODE_ENV === "development") {
+                      console.error("Error parsing tags:", e);
+                    }
                   }
                   return tagsArray.map((tag, index) => (
                     <span
@@ -305,36 +360,79 @@ export default function SearchHomepage() {
             }`}
           >
             <div className="max-w-2xl mx-auto space-y-4">
-              {/* Search Input and Type Selection */}
+              {/* Search Input and Controls */}
               <div
-                className={`flex gap-2 fixed top-0 left-0 right-0 z-49
-                  transition-all duration-500 ease-in px-4
-                  ${scrolled ? "mt-3" : "mt-20"}
+                className={`flex flex-col gap-2 fixed top-0 left-0 right-0 z-49 bg-background/80 backdrop-blur-sm p-4 border-b border-divider
+                  ease-in
+                  ${scrolled ? "mt-0" : "mt-16"}
                   ${selectedFile ? "max-w-[50%]" : "max-w-2xl mx-auto"}
                 `}
               >
-                <Input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onValueChange={setSearchQuery}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch(e);
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Search"
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleSearch(e);
+                      }
+                    }}
+                    radius="lg"
+                    classNames={{
+                      base: "flex-1",
+                      mainWrapper: "h-full",
+                      input:
+                        "text-lg px-6 hover:outline-sm hover:bg-background",
+                      inputWrapper:
+                        "h-12 px-6 shadow-lg border border-divider bg-background hover:!bg-background hover:border-2",
+                    }}
+                    startContent={
+                      <SearchIcon className="text-slate-400 pointer-events-none flex-shrink-0 text-lg mr-2" />
                     }
-                  }}
-                  radius="lg"
-                  classNames={{
-                    base: "flex-1",
-                    mainWrapper: "h-full",
-                    input: "text-lg px-6 hover:outline-sm hover:bg-background",
-                    inputWrapper:
-                      "h-16 px-6 shadow-xl border border-divider bg-background hover:!bg-background hover:border-2",
-                  }}
-                  startContent={
-                    <SearchIcon className="text-slate-400 pointer-events-none flex-shrink-0 text-lg mr-2" />
-                  }
-                />
+                  />
+                  <Button
+                    color="primary"
+                    size="lg"
+                    onPress={() => handleSearch()}
+                    isLoading={isLoading}
+                    className="px-8"
+                  >
+                    Search
+                  </Button>
+                </div>
+
+                {/* Search Controls */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        isSelected={isSemanticSearch}
+                        onValueChange={setIsSemanticSearch}
+                        size="sm"
+                        color="primary"
+                      />
+                      <span className="text-sm text-default-600">
+                        {isSemanticSearch
+                          ? "Semantic Search"
+                          : "Traditional Search"}
+                      </span>
+                    </div>
+
+                    {averageLatency && (
+                      <Chip size="sm" color="success" variant="flat">
+                        {averageLatency.toFixed(0)}ms
+                      </Chip>
+                    )}
+                  </div>
+
+                  {totalResults > 0 && (
+                    <span className="text-sm text-default-500">
+                      {results.length} of {totalResults} results
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Loading State */}
@@ -353,7 +451,7 @@ export default function SearchHomepage() {
 
               {/* Search Results */}
               {!isLoading && results.length > 0 && (
-                <div className="space-y-4 mt-24">
+                <div className="space-y-4 mt-40">
                   {results.map((result) => (
                     <Card
                       key={result.id}
@@ -385,6 +483,20 @@ export default function SearchHomepage() {
                       </CardFooter>
                     </Card>
                   ))}
+
+                  {/* Load More Button */}
+                  {hasMore && (
+                    <div className="flex justify-center py-4">
+                      <Button
+                        variant="bordered"
+                        onPress={handleLoadMore}
+                        isLoading={isLoading}
+                        disabled={isLoading}
+                      >
+                        Load More Results
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -399,7 +511,9 @@ export default function SearchHomepage() {
 
           {/* Right Side - File Details */}
           {selectedFile && (
-            <div className="w-1/2 border-l border-divider h-screen sticky top-0 overflow-y-auto">
+            <div
+              className={`w-1/2 border-l border-divider h-screen sticky overflow-y-auto`}
+            >
               <FileDetails file={selectedFile} />
             </div>
           )}

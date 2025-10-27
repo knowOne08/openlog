@@ -7,6 +7,47 @@ import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import { testConnection } from './config/db.js';
 
+// Centralized logging configuration based on NODE_ENV
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Override console methods for production
+if (isProduction) {
+    // In production, disable console.log and console.debug
+    console.log = () => {};
+    console.debug = () => {};
+    
+    // Keep console.error and console.warn but sanitize them
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    
+    console.error = (...args) => {
+        // Only log the first argument (message) and timestamp in production
+        const message = typeof args[0] === 'string' ? args[0] : 'Error occurred';
+        originalError(`[${new Date().toISOString()}] ${message}`);
+    };
+    
+    console.warn = (...args) => {
+        // Only log the first argument (message) and timestamp in production
+        const message = typeof args[0] === 'string' ? args[0] : 'Warning occurred';
+        originalWarn(`[${new Date().toISOString()}] ${message}`);
+    };
+} else if (isDevelopment) {
+    // In development, enhance logging with timestamps
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    const originalDebug = console.debug;
+    
+    console.log = (...args) => originalLog(`[${new Date().toISOString()}] [LOG]`, ...args);
+    console.error = (...args) => originalError(`[${new Date().toISOString()}] [ERROR]`, ...args);
+    console.warn = (...args) => originalWarn(`[${new Date().toISOString()}] [WARN]`, ...args);
+    console.debug = (...args) => originalDebug(`[${new Date().toISOString()}] [DEBUG]`, ...args);
+}
+
+// Log startup information
+console.log(`🚀 Server starting in ${process.env.NODE_ENV || 'development'} mode`);
+
 const app = express();
 
 // Environment validation
@@ -53,7 +94,7 @@ const limiter = rateLimit({
 app.use(helmet()); // Security headers
 app.use(cors(corsOptions)); // CORS
 app.use(limiter); // Rate limiting
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev')); // Logging
+app.use(morgan(isProduction ? 'combined' : 'dev')); // Logging
 app.use(json({ limit: '50mb' })); // JSON parsing with size limit
 app.use(urlencoded({ extended: true, limit: '50mb' })); // URL encoded parsing
 
@@ -63,7 +104,7 @@ app.get('/health', (req, res) => {
         success: true,
         message: 'OpenLog API is running',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
+        environment: process.env.NODE_ENV || 'development',
         version: '1.0.0'
     });
 });
@@ -160,7 +201,7 @@ app.use((error, req, res, next) => {
         success: false,
         error: {
             code: 'INTERNAL_SERVER_ERROR',
-            message: process.env.NODE_ENV === 'production'
+            message: isProduction
                 ? 'Something went wrong on our end'
                 : error.message
         }
