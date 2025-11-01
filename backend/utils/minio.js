@@ -41,4 +41,9 @@ async function deleteFile(objectName) {
     }
 }
 
-export { uploadFile, getFileUrl, deleteFile };
+async function getFileStream(objectName) {
+    await ensureBucket();
+    return minioClient.getObject(BUCKET, objectName);
+}
+
+export { uploadFile, getFileUrl, deleteFile, getFileStream };

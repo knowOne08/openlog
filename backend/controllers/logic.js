@@ -2,10 +2,11 @@ import { supabaseClient } from '../config/db.js';
 import { uploadFile, deleteFile } from '../utils/minio.js';
 import { upsertEmbedding, searchQdrant, deleteEmbedding } from '../utils/qdrant.js';
 import { v4 as uuidv4 } from 'uuid';
+import { index as meiliIndex } from '../utils/meili.js';
 
 // Simulate summary, extraction, embedding generation with dummy functions
 async function extractText(fileBuffer, mimetype) {
-    return 'Extracted text from file...'; // Replace with your logic
+    return 'This will be covered in future versions'; // Replace with your logic
 }
 async function generateSummary(text) {
     return 'This is an AI-generated summary of the file.'; // Replace with LLM call
@@ -180,7 +181,23 @@ async function handleFileMetaData({ title, description, file, ownerId, visibilit
             }
         };
 
-        await Promise.all(tags);
+        // Index the new upload in MeiliSearch
+        await meiliIndex.addDocuments([{
+            id: up.id,
+            title,
+            description,
+            file_type: 'local_file',
+            file_path: objectName,
+            file_size: file.size,
+            mime_type: file.mimetype,
+            owner_id: ownerId,
+            visibility,
+            embeddings: embedding,
+            extracted_text,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            tags
+        }]);
 
         return up;
 
@@ -464,33 +481,18 @@ async function searchController(query, type, limit = 10, offset = 0) {
         }
 
         if (type === 'traditional') {
+            // Use Meilisearch for fast, multi-field search (title, description, tags)
             const searchStartTime = performance.now();
-            const tagMap = await getTagMap();
-
-            // Get total count for pagination
-            const { count, error: countError } = await supabaseClient
-                .from('uploads')
-                .select('*', { count: 'exact', head: true })
-                .or(`title.ilike.%${query}%,description.ilike.%${query}%`);
-            if (countError) throw countError;
-
-            // Get paginated results
-            const { data: traditionalResults, error } = await supabaseClient
-                .from('uploads')
-                .select('id, title, description, file_type, file_path, external_url, created_at')
-                .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
-                .order('created_at', { ascending: false })
-                .range(offset, offset + limit - 1);
-            if (error) throw error;
-
+            const result = await meiliIndex.search(query, {
+                limit,
+                offset,
+                attributesToHighlight: ['title', 'description', 'tags'],
+            });
             const searchEndTime = performance.now();
             const searchLatency = searchEndTime - searchStartTime;
-            // Log performance metrics
-            console.debug(`Traditional search latency: ${searchLatency}ms`);
-
-            const mappedResults = (traditionalResults || []).map(doc => ({
+            const mappedResults = (result.hits || []).map(doc => ({
                 id: doc.id,
-                score: 1, // Default score for traditional search
+                score: 1,
                 payload: {
                     title: doc.title,
                     description: doc.description,
@@ -498,18 +500,16 @@ async function searchController(query, type, limit = 10, offset = 0) {
                     file_path: doc.file_path,
                     external_url: doc.external_url,
                     created_at: doc.created_at,
-                    tags: tagMap.get(doc.id) || [],
+                    tags: doc.tags || [],
                     searchLatency
                 }
             }));
-
-            // Return paginated results with metadata
             return {
                 data: mappedResults,
-                total: count,
-                hasMore: offset + limit < count,
+                total: result.estimatedTotalHits || mappedResults.length,
+                hasMore: offset + limit < (result.estimatedTotalHits || 0),
                 currentPage: Math.floor(offset / limit) + 1,
-                totalPages: Math.ceil(count / limit)
+                totalPages: Math.ceil((result.estimatedTotalHits || 0) / limit)
             };
         }
 

@@ -138,7 +138,7 @@ export default function SearchHomepage() {
                 tagsArray = result.payload.tags;
               }
             } catch (e) {
-              console.error("Error parsing tags:", e);
+              // ...existing code...
             }
             return tagsArray.some((tag: string) => selectedTags.includes(tag));
           });
@@ -174,7 +174,7 @@ export default function SearchHomepage() {
         setError("Failed to perform search. Please try again.");
         // Only log detailed errors in development
         if (process.env.NODE_ENV === "development") {
-          console.error("Search error:", err);
+          // ...existing code...
         }
       } finally {
         setIsLoading(false);
@@ -270,7 +270,7 @@ export default function SearchHomepage() {
                   } catch (e) {
                     // Silently handle tag parsing errors in production
                     if (process.env.NODE_ENV === "development") {
-                      console.error("Error parsing tags:", e);
+                      // ...existing code...
                     }
                   }
                   return tagsArray.map((tag, index) => (
@@ -304,15 +304,35 @@ export default function SearchHomepage() {
           </div>
         </div>
         <div className="border-t border-divider p-4">
-          <Button
-            size="lg"
-            className="w-full"
-            color="default"
-            href={file.payload.external_url || `#`}
-            as={Link}
-          >
-            {file.payload.file_type === "link" ? "Open Link" : "Download File"}
-          </Button>
+          {file.payload.file_type === "link" ? (
+            <Button
+              size="lg"
+              className="w-full"
+              color="default"
+              href={file.payload.external_url || `#`}
+              as={Link}
+            >
+              Open Link
+            </Button>
+          ) : (
+            file.payload.file_path && (
+              <Button
+                size="lg"
+                className="w-full"
+                color="default"
+                as={Link}
+                href={`${
+                  process.env.NEXT_PUBLIC_API_URL
+                }/download?file_path=${encodeURIComponent(
+                  file.payload.file_path
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Download File
+              </Button>
+            )
+          )}
         </div>
       </div>
     );
@@ -368,49 +388,51 @@ export default function SearchHomepage() {
                   ${selectedFile ? "max-w-[50%]" : "max-w-2xl mx-auto"}
                 `}
               >
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Search"
-                    value={searchQuery}
-                    onValueChange={setSearchQuery}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleSearch(e);
+                <div className="flex gap-2 items-center justify-center w-full">
+                  <div className="relative w-full">
+                    <Input
+                      type="text"
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onValueChange={setSearchQuery}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSearch(e);
+                        }
+                      }}
+                      radius="lg"
+                      color="primary"
+                      classNames={{
+                        base: "w-full",
+                        mainWrapper: "h-12",
+                        input: "text-base px-4 bg-background text-foreground",
+                        inputWrapper:
+                          "h-12 px-4 bg-background border border-divider",
+                      }}
+                      startContent={
+                        <SearchIcon className="text-primary pointer-events-none flex-shrink-0 text-xl mr-2" />
                       }
-                    }}
-                    radius="lg"
-                    classNames={{
-                      base: "flex-1",
-                      mainWrapper: "h-full",
-                      input:
-                        "text-lg px-6 hover:outline-sm hover:bg-background",
-                      inputWrapper:
-                        "h-12 px-6 shadow-lg border border-divider bg-background hover:!bg-background hover:border-2",
-                    }}
-                    startContent={
-                      <SearchIcon className="text-slate-400 pointer-events-none flex-shrink-0 text-lg mr-2" />
-                    }
-                  />
+                      endContent={
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            isSelected={isSemanticSearch}
+                            onValueChange={setIsSemanticSearch}
+                            size="sm"
+                            color="primary"
+                            className="ml-2"
+                          />
+                          <span className="text-xs text-default-600 min-w-[60px] text-left">
+                            {isSemanticSearch ? "Semantic" : "Traditional"}
+                          </span>
+                        </div>
+                      }
+                    />
+                  </div>
                 </div>
 
                 {/* Search Controls */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        isSelected={isSemanticSearch}
-                        onValueChange={setIsSemanticSearch}
-                        size="sm"
-                        color="primary"
-                      />
-                      <span className="text-sm text-default-600">
-                        {isSemanticSearch
-                          ? "Semantic Search"
-                          : "Traditional Search"}
-                      </span>
-                    </div>
-
                     {averageLatency && (
                       <Chip size="sm" color="success" variant="flat">
                         {averageLatency.toFixed(0)}ms
@@ -442,7 +464,7 @@ export default function SearchHomepage() {
 
               {/* Search Results */}
               {!isLoading && results.length > 0 && (
-                <div className="space-y-4 mt-40">
+                <div className="space-y-4 mt-45">
                   {results.map((result) => (
                     <Card
                       key={result.id}
@@ -503,7 +525,7 @@ export default function SearchHomepage() {
           {/* Right Side - File Details */}
           {selectedFile && (
             <div
-              className={`w-1/2 border-l border-divider h-screen sticky overflow-y-auto`}
+              className={`w-1/2 border-l border-divider h-screen sticky overflow-y-auto mt-16`}
             >
               <FileDetails file={selectedFile} />
             </div>
