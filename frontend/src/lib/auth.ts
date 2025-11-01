@@ -1,11 +1,17 @@
 // Authentication utility functions for interfacing with the backend API
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 export interface LoginCredentials {
   email: string;
   password: string;
+}
+
+export interface SignupCredentials {
+  email: string;
+  password: string;
+  fullName: string;
 }
 
 export interface AuthResponse {
@@ -71,6 +77,41 @@ export const auth = {
       // Only log detailed errors in development
       if (process.env.NODE_ENV === "development") {
         console.error("Login error:", error);
+      }
+      return {
+        success: false,
+        error: {
+          code: "NETWORK_ERROR",
+          message: "Network error occurred. Please try again.",
+        },
+      };
+    }
+  },
+
+  // Sign up user
+  async signup(credentials: SignupCredentials): Promise<AuthResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data && data.data.session) {
+        // Store tokens if auto-login was successful
+        localStorage.setItem(TOKEN_KEY, data.data.session.access_token);
+        localStorage.setItem(REFRESH_TOKEN_KEY, data.data.session.refresh_token);
+      }
+
+      return data;
+    } catch (error) {
+      // Only log detailed errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("Signup error:", error);
       }
       return {
         success: false,

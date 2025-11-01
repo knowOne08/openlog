@@ -9,11 +9,13 @@
     "dotenv": "^17.2.1",
     "express": "^4.18.2",
     "express-rate-limit": "^8.0.1",
+    "form-data": "^4.0.4",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "minio": "^8.0.5",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "node-fetch": "^3.3.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -24,10 +26,17 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node test-backend.js",
+    "test:upload": "node test-upload.js",
+    "test:robustness": "node test-transaction-robustness.js",
+    "test:minio": "node test-minio-only.js",
     "start": "nodemon server.js",
     "dev": "nodemon server.js",
-    "prod": "NODE_ENV=production node server.js"
+    "prod": "NODE_ENV=production node server.js",
+    "minio:start": "cd minio && ./start.sh",
+    "minio:stop": "cd minio && docker-compose down",
+    "minio:logs": "cd minio && docker-compose logs -f",
+    "setup": "cd minio && ./start.sh && cd .. && echo '\n🎯 Starting backend in 3 seconds...' && sleep 3 && npm start"
   },
   "keywords": [],
   "author": "",

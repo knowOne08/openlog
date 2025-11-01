@@ -81,7 +81,169 @@ const requireAdmin = async (req, res, next) => {
     }
 };
 
-// 1. USER LOGIN
+// 1. USER SIGNUP
+router.post('/signup', async (req, res) => {
+    try {
+        const { email, password, fullName } = req.body;
+
+        // Validate required fields
+        if (!email || !password || !fullName) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'MISSING_REQUIRED_FIELDS',
+                    message: 'Email, password, and full name are required'
+                }
+            });
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_EMAIL',
+                    message: 'Please provide a valid email address'
+                }
+            });
+        }
+
+        // Validate password strength
+        if (password.length < 8) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'WEAK_PASSWORD',
+                    message: 'Password must be at least 8 characters long'
+                }
+            });
+        }
+
+        // Check if user already exists
+        const { data: existingUser } = await supabase
+            .from('user_profiles')
+            .select('email')
+            .eq('email', email)
+            .single();
+
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                error: {
+                    code: 'USER_EXISTS',
+                    message: 'An account with this email already exists'
+                }
+            });
+        }
+
+        // Create user in Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true, // Auto-confirm email for now
+            user_metadata: {
+                full_name: fullName
+            }
+        });
+
+        if (authError) {
+            console.error('Signup auth error:', authError);
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'SIGNUP_FAILED',
+                    message: authError.message || 'Failed to create account'
+                }
+            });
+        }
+
+        // Create user profile in our database
+        const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .insert([
+                {
+                    id: authData.user.id,
+                    email: email,
+                    full_name: fullName,
+                    role: 'member', // Default role
+                    status: 'active',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }
+            ])
+            .select()
+            .single();
+
+        if (profileError) {
+            console.error('Profile creation error:', profileError);
+            
+            // If profile creation fails, we should clean up the auth user
+            await supabase.auth.admin.deleteUser(authData.user.id);
+            
+            return res.status(500).json({
+                success: false,
+                error: {
+                    code: 'PROFILE_CREATION_FAILED',
+                    message: 'Failed to create user profile'
+                }
+            });
+        }
+
+        // Generate session for the new user
+        const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (sessionError) {
+            console.error('Auto-login after signup failed:', sessionError);
+            // User is created but auto-login failed - that's okay
+            return res.status(201).json({
+                success: true,
+                message: 'Account created successfully. Please sign in.',
+                data: {
+                    user: {
+                        id: authData.user.id,
+                        email: authData.user.email,
+                        name: fullName
+                    }
+                }
+            });
+        }
+
+        // Return success with session data
+        res.status(201).json({
+            success: true,
+            message: 'Account created successfully',
+            data: {
+                user: {
+                    id: sessionData.user.id,
+                    email: sessionData.user.email,
+                    name: fullName,
+                    role: 'member'
+                },
+                session: {
+                    access_token: sessionData.session.access_token,
+                    refresh_token: sessionData.session.refresh_token,
+                    expires_at: sessionData.session.expires_at
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Signup error:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'INTERNAL_ERROR',
+                message: 'An unexpected error occurred during signup'
+            }
+        });
+    }
+});
+
+// 2. USER LOGIN
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -140,7 +302,7 @@ router.post('/login', async (req, res) => {
                 user: {
                     id: authData.user.id,
                     email: authData.user.email,
-                    name: profile.name,
+                    name: profile.full_name,
                     role: profile.role,
                     team: profile.team,
                     is_active: profile.is_active,
@@ -326,7 +488,7 @@ router.post('/admin/create-member', authenticateToken, requireAdmin, async (req,
                 user: {
                     id: authData.user.id,
                     email: authData.user.email,
-                    name: profileData.name,
+                    name: profileData.full_name,
                     role: profileData.role,
                     team: profileData.team,
                     is_active: profileData.is_active,
@@ -535,7 +697,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
                 user: {
                     id: req.user.id,
                     email: req.user.email,
-                    name: profile.name,
+                    name: profile.full_name,
                     role: profile.role,
                     team: profile.team,
                     is_active: profile.is_active,
