@@ -112,3 +112,5 @@ dist/
 # Package files
 *.tar.gz
 *.zip
+
+.venv

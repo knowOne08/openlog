@@ -392,15 +392,6 @@ export default function SearchHomepage() {
                       <SearchIcon className="text-slate-400 pointer-events-none flex-shrink-0 text-lg mr-2" />
                     }
                   />
-                  <Button
-                    color="primary"
-                    size="lg"
-                    onPress={() => handleSearch()}
-                    isLoading={isLoading}
-                    className="px-8"
-                  >
-                    Search
-                  </Button>
                 </div>
 
                 {/* Search Controls */}
@@ -437,7 +428,7 @@ export default function SearchHomepage() {
 
               {/* Loading State */}
               {isLoading && (
-                <div className="flex justify-center py-8 mt-20">
+                <div className="flex justify-center py-8 mt-40">
                   <Spinner size="lg" />
                 </div>
               )}
@@ -502,7 +493,7 @@ export default function SearchHomepage() {
 
               {/* No Results */}
               {!isLoading && searchQuery && results.length === 0 && (
-                <div className="text-center py-8 mt-20 text-default-500">
+                <div className="text-center py-8 mt-40 text-default-500">
                   No results found for &ldquo;{searchQuery}&rdquo;
                 </div>
               )}
