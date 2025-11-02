@@ -40,3 +40,7 @@ build/
 .cache/
 .npm/
 .eslintcache
+
+temp_uploads
+
+scripts/

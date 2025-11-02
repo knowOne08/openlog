@@ -27,10 +27,18 @@ import {
 } from "@heroui/react";
 import { DatePicker } from "@heroui/date-picker";
 
+interface UploadResult {
+  id: string;
+  title: string;
+  description: string;
+  file_type: string;
+  created_at: string;
+}
+
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadSuccess?: (upload: Record<string, unknown>) => void;
+  onUploadSuccess?: (upload: UploadResult) => void;
 }
 
 interface UploadFormData {
@@ -129,7 +137,7 @@ export default function UploadModal({
       setFileFormData((prev) => ({ ...prev, title: fileName }));
     }
   }, [fileFormData.title]);
-
+  
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -140,12 +148,37 @@ export default function UploadModal({
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) handleFileSelect(files[0]);
-  }, [handleFileSelect]);
+  const handleFileSelect = useCallback(
+    (file: File) => {
+      const validTypes = [
+        "image/",
+        "video/",
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ];
+      if (!validTypes.some((type) => file.type.startsWith(type))) {
+        alert("Please select an appropriate file type");
+        return;
+      }
+      setSelectedFile(file);
+      if (!fileFormData.title) {
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
+        setFileFormData((prev) => ({ ...prev, title: fileName }));
+      }
+    },
+    [fileFormData.title]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) handleFileSelect(files[0]);
+    },
+    [handleFileSelect]
+  );
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -411,7 +444,10 @@ export default function UploadModal({
                   onSelectionChange={(keys) =>
                     setFileFormData((p) => ({
                       ...p,
-                      visibility: Array.from(keys)[0] as "private" | "public" | "team",
+                      visibility: Array.from(keys)[0] as
+                        | "private"
+                        | "public"
+                        | "team",
                     }))
                   }
                   variant="bordered"
@@ -437,13 +473,11 @@ export default function UploadModal({
                 value={fileDateValue ?? undefined}
                 onChange={(date) => {
                   setFileDateValue(date);
-                  if (date) {
-                    const iso = `${date.year}-${String(date.month).padStart(
-                      2,
-                      "0"
-                    )}-${String(date.day).padStart(2, "0")}`;
-                    setFileFormData((p) => ({ ...p, scheduledDate: iso }));
-                  }
+                  const iso = `${date?.year}-${String(date?.month).padStart(
+                    2,
+                    "0"
+                  )}-${String(date?.day).padStart(2, "0")}`;
+                  setFileFormData((p) => ({ ...p, scheduledDate: iso }));
                 }}
                 variant="bordered"
               />
@@ -520,7 +554,10 @@ export default function UploadModal({
                   onSelectionChange={(keys) =>
                     setLinkFormData((p) => ({
                       ...p,
-                      visibility: Array.from(keys)[0] as "private" | "public" | "team",
+                      visibility: Array.from(keys)[0] as
+                        | "private"
+                        | "public"
+                        | "team",
                     }))
                   }
                   variant="bordered"
@@ -546,13 +583,11 @@ export default function UploadModal({
                 value={linkDateValue ?? undefined}
                 onChange={(date) => {
                   setLinkDateValue(date);
-                  if (date) {
-                    const iso = `${date.year}-${String(date.month).padStart(
-                      2,
-                      "0"
-                    )}-${String(date.day).padStart(2, "0")}`;
-                    setLinkFormData((p) => ({ ...p, scheduledDate: iso }));
-                  }
+                  const iso = `${date?.year}-${String(date?.month).padStart(
+                    2,
+                    "0"
+                  )}-${String(date?.day).padStart(2, "0")}`;
+                  setLinkFormData((p) => ({ ...p, scheduledDate: iso }));
                 }}
                 variant="bordered"
               />

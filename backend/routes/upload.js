@@ -8,7 +8,6 @@ const router = Router();
 // POST /api/upload
 router.post('/file', upload.single('file'), async (req, res) => {
     try {
-        console.log(req.body);
         const { title, description, owner_id, visibility, tags } = req.body;
         if (!req.file) return res.status(400).json({ error: 'File missing' });
         const uploadRecord = await handleFileMetaData({
@@ -21,8 +20,9 @@ router.post('/file', upload.single('file'), async (req, res) => {
         });
         res.json({ success: true, upload: uploadRecord });
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ error: err.message });
+        // Log error server-side only, don't expose full error details to client
+        console.error('File upload error:', err.message);
+        res.status(500).json({ error: 'File upload failed' });
     }
 });
 
@@ -30,12 +30,9 @@ router.post('/file', upload.single('file'), async (req, res) => {
 router.post('/link', async (req, res) => {
     try {
         const { title, description, url, owner_id, visibility, tags } = req.body;
-        console.log(tags);
-        // tags = JSON.parse(tags || "[]");
         if (!title || !url || !owner_id || !visibility || !tags) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
-        console.log(tags);
         // Save link metadata
         const linkRecord = await handleLinkMetadata({
             title,
@@ -47,8 +44,9 @@ router.post('/link', async (req, res) => {
         });
         res.json({ success: true, upload: linkRecord });
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ error: err.message });
+        // Log error server-side only, don't expose full error details to client
+        console.error('Link upload error:', err.message);
+        res.status(500).json({ error: 'Link upload failed' });
     }
 });
 

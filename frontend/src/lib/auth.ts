@@ -1,6 +1,7 @@
 // Authentication utility functions for interfacing with the backend API
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
 export interface LoginCredentials {
   email: string;
@@ -42,17 +43,17 @@ export interface UserProfile {
 }
 
 // Store tokens in localStorage (in production, consider using httpOnly cookies)
-const TOKEN_KEY = 'surfe_access_token';
-const REFRESH_TOKEN_KEY = 'surfe_refresh_token';
+const TOKEN_KEY = "surfe_access_token";
+const REFRESH_TOKEN_KEY = "surfe_refresh_token";
 
 export const auth = {
   // Login user
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
       });
@@ -67,12 +68,15 @@ export const auth = {
 
       return data;
     } catch (error) {
-      console.error('Login error:', error);
+      // Only log detailed errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("Login error:", error);
+      }
       return {
         success: false,
         error: {
-          code: 'NETWORK_ERROR',
-          message: 'Network error occurred. Please try again.',
+          code: "NETWORK_ERROR",
+          message: "Network error occurred. Please try again.",
         },
       };
     }
@@ -84,15 +88,18 @@ export const auth = {
       const token = this.getAccessToken();
       if (token) {
         await fetch(`${API_BASE_URL}/auth/logout`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         });
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      // Only log detailed errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("Logout error:", error);
+      }
     } finally {
       // Clear tokens regardless of API call success
       this.clearTokens();
@@ -109,9 +116,9 @@ export const auth = {
       }
 
       const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
@@ -126,7 +133,10 @@ export const auth = {
 
       return false;
     } catch (error) {
-      console.error('Token refresh error:', error);
+      // Only log detailed errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("Token refresh error:", error);
+      }
       return false;
     }
   },
@@ -140,10 +150,10 @@ export const auth = {
       }
 
       const response = await fetch(`${API_BASE_URL}/auth/profile`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -164,13 +174,19 @@ export const auth = {
 
       return null;
     } catch (error) {
-      console.error('Get profile error:', error);
+      // Only log detailed errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("Get profile error:", error);
+      }
       return null;
     }
   },
 
   // Change password
-  async changePassword(currentPassword: string, newPassword: string): Promise<boolean> {
+  async changePassword(
+    currentPassword: string,
+    newPassword: string
+  ): Promise<boolean> {
     try {
       const token = this.getAccessToken();
       if (!token) {
@@ -178,10 +194,10 @@ export const auth = {
       }
 
       const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           current_password: currentPassword,
@@ -192,7 +208,10 @@ export const auth = {
       const data = await response.json();
       return data.success;
     } catch (error) {
-      console.error('Change password error:', error);
+      // Only log detailed errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("Change password error:", error);
+      }
       return false;
     }
   },
@@ -225,11 +244,14 @@ export const auth = {
 
     try {
       // Decode JWT token to check expiration
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split(".")[1]));
       const currentTime = Date.now() / 1000;
       return payload.exp < currentTime;
     } catch (error) {
-      console.error('Token decode error:', error);
+      // Only log detailed errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("Token decode error:", error);
+      }
       return true;
     }
   },
@@ -237,13 +259,16 @@ export const auth = {
 
 // API client with automatic token handling
 export const apiClient = {
-  async request(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  async request(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
     const token = auth.getAccessToken();
-    
+
     if (token) {
       options.headers = {
         ...options.headers,
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       };
     }
 
@@ -258,7 +283,7 @@ export const apiClient = {
         if (newToken) {
           options.headers = {
             ...options.headers,
-            'Authorization': `Bearer ${newToken}`,
+            Authorization: `Bearer ${newToken}`,
           };
           return fetch(`${API_BASE_URL}${endpoint}`, options);
         }
@@ -269,25 +294,27 @@ export const apiClient = {
   },
 
   get: (endpoint: string) => apiClient.request(endpoint),
-  
-  post: (endpoint: string, data: Record<string, unknown>) => apiClient.request(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  }),
-  
-  put: (endpoint: string, data: Record<string, unknown>) => apiClient.request(endpoint, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  }),
-  
-  delete: (endpoint: string) => apiClient.request(endpoint, {
-    method: 'DELETE',
-  }),
-};
 
+  post: (endpoint: string, data: Record<string, unknown>) =>
+    apiClient.request(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }),
+
+  put: (endpoint: string, data: Record<string, unknown>) =>
+    apiClient.request(endpoint, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }),
+
+  delete: (endpoint: string) =>
+    apiClient.request(endpoint, {
+      method: "DELETE",
+    }),
+};

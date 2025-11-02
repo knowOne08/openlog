@@ -173,43 +173,6 @@ export default function DashboardPage() {
                 </div>
               </CardBody>
             </Card>
-
-            {/* System Status Card */}
-            <Card className="shadow-medium">
-              <CardHeader className="pb-2">
-                <h3 className="text-lg font-medium text-foreground">
-                  System Status
-                </h3>
-              </CardHeader>
-              <CardBody className="pt-2">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-foreground-500">
-                      Backend API
-                    </span>
-                    <Chip color="success" variant="flat" size="sm">
-                      Online
-                    </Chip>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-foreground-500">
-                      Database
-                    </span>
-                    <Chip color="success" variant="flat" size="sm">
-                      Connected
-                    </Chip>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-foreground-500">
-                      Authentication
-                    </span>
-                    <Chip color="success" variant="flat" size="sm">
-                      Active
-                    </Chip>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
           </div>
         </div>
       </main>

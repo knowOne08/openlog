@@ -11,17 +11,25 @@
     "express-rate-limit": "^8.0.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "meilisearch": "^0.54.0",
     "minio": "^8.0.5",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "node-fetch": "^3.3.2",
     "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   },
   "name": "backend",
   "version": "1.0.0",
-  "main": "minio-test.js",
+  "type": "module",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "dev": "nodemon server.js",
+    "prod": "NODE_ENV=production node server.js"
   },
   "keywords": [],
   "author": "",

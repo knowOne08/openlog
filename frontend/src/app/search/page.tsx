@@ -7,15 +7,206 @@ import {
   NavbarBrand,
   NavbarContent,
   NavbarItem,
+  Spinner,
+  Card,
+  CardBody,
+  CardHeader,
+  CardFooter,
+  Link,
+  Switch,
+  Chip,
 } from "@heroui/react";
 import { SearchIcon } from "@heroui/shared-icons";
 
+interface SearchResult {
+  id: string;
+  score: number;
+  payload: {
+    title: string;
+    description: string;
+    file_type: string;
+    file_path?: string;
+    external_url?: string;
+    created_at: string;
+    tags: string[] | string;
+    searchLatency?: number;
+  };
+}
+
+interface ApiResponse {
+  success: boolean;
+  results: SearchResult[];
+}
+
 export default function SearchHomepage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSemanticSearch, setIsSemanticSearch] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [error, setError] = useState("");
+  const [dateFilter] = useState("all");
+  const [selectedTags] = useState<string[]>([]);
+  const [averageLatency, setAverageLatency] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
+  const resultsPerPage = 10;
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLInputElement> | KeyboardEvent) => {
-    e.preventDefault();
-    console.log("Searching for:", searchQuery);
+  const handleSearch = React.useCallback(
+    async (e?: React.FormEvent, loadMore = false) => {
+      e?.preventDefault();
+
+      if (!searchQuery.trim()) {
+        setResults([]);
+        setCurrentPage(1);
+        setHasMore(false);
+        setTotalResults(0);
+        return;
+      }
+
+      setIsLoading(true);
+      setError("");
+
+      // Record start time for latency measurement
+      const startTime = performance.now();
+
+      try {
+        const searchEndpoint = isSemanticSearch
+          ? `${process.env.NEXT_PUBLIC_API_URL}/search/query`
+          : `${process.env.NEXT_PUBLIC_API_URL}/search/traditional`;
+
+        const page = loadMore ? currentPage + 1 : 1;
+
+        const response = await fetch(searchEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: searchQuery,
+            type: isSemanticSearch ? "semantic" : "traditional",
+            limit: resultsPerPage,
+            offset: (page - 1) * resultsPerPage,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Search failed");
+        }
+
+        const data = (await response.json()) as ApiResponse & {
+          total?: number;
+          hasMore?: boolean;
+        };
+
+        // Calculate end-to-end latency
+        const endTime = performance.now();
+        const latency = endTime - startTime;
+
+        // Filter results by date if needed
+        let filteredResults = [...data.results];
+        if (dateFilter !== "all") {
+          const now = new Date();
+          const filterDate = new Date();
+
+          switch (dateFilter) {
+            case "today":
+              filterDate.setHours(0, 0, 0, 0);
+              break;
+            case "week":
+              filterDate.setDate(now.getDate() - 7);
+              break;
+            case "month":
+              filterDate.setMonth(now.getMonth() - 1);
+              break;
+          }
+
+          filteredResults = filteredResults.filter(
+            (result: SearchResult) =>
+              new Date(result.payload.created_at) >= filterDate
+          );
+        }
+
+        // Filter by selected tags if any are selected
+        if (selectedTags.length > 0) {
+          filteredResults = filteredResults.filter((result: SearchResult) => {
+            let tagsArray: string[] = [];
+            try {
+              if (typeof result.payload.tags === "string") {
+                tagsArray = JSON.parse(result.payload.tags);
+              } else if (Array.isArray(result.payload.tags)) {
+                tagsArray = result.payload.tags;
+              }
+            } catch (e) {
+              // ...existing code...
+            }
+            return tagsArray.some((tag: string) => selectedTags.includes(tag));
+          });
+        }
+
+        // Calculate average latency including backend processing time
+        const totalLatency = filteredResults.reduce(
+          (sum: number, result: SearchResult) =>
+            sum + (result.payload.searchLatency || 0),
+          0
+        );
+
+        if (filteredResults.length > 0) {
+          setAverageLatency(
+            totalLatency / filteredResults.length +
+              latency / filteredResults.length
+          );
+        } else {
+          setAverageLatency(null);
+        }
+
+        if (loadMore) {
+          setResults((prev) => [...prev, ...filteredResults]);
+          setCurrentPage(page);
+        } else {
+          setResults(filteredResults);
+          setCurrentPage(1);
+        }
+
+        setTotalResults(data.total || filteredResults.length);
+        setHasMore(data.hasMore || filteredResults.length === resultsPerPage);
+      } catch (err) {
+        setError("Failed to perform search. Please try again.");
+        // Only log detailed errors in development
+        if (process.env.NODE_ENV === "development") {
+          // ...existing code...
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [
+      searchQuery,
+      isSemanticSearch,
+      dateFilter,
+      selectedTags,
+      currentPage,
+      resultsPerPage,
+    ]
+  );
+
+  // Memoize search function to prevent infinite loop
+  const debouncedSearch = React.useCallback(async () => {
+    if (searchQuery.trim()) {
+      await handleSearch();
+    }
+  }, [searchQuery, handleSearch]);
+
+  // Debounce search function
+  useEffect(() => {
+    const debounceTimeout = setTimeout(debouncedSearch, 300); // 300ms debounce delay
+    return () => clearTimeout(debounceTimeout);
+  }, [debouncedSearch]);
+
+  const handleLoadMore = () => {
+    if (!isLoading && hasMore) {
+      handleSearch(undefined, true);
+    }
   };
 
   const [scrolled, setScrolled] = useState(false);
@@ -30,171 +221,139 @@ export default function SearchHomepage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const [selectedFile, setSelectedFile] = useState<SearchResult | null>(null);
+
+  const handleViewFile = (result: SearchResult) => {
+    setSelectedFile(result);
+  };
+
+  const FileDetails = ({ file }: { file: SearchResult }) => {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="border-b border-divider p-4">
+          <h2 className="text-xl font-semibold text-foreground">
+            {file.payload.title}
+          </h2>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-small text-default-500">
+              Score: {(file.score * 100).toFixed(1)}%
+            </span>
+            <span className="text-small text-default-500">•</span>
+            <span className="text-small text-default-500">
+              {new Date(file.payload.created_at).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+        <div className="p-4 flex-1 overflow-y-auto">
+          <div className="space-y-4">
+            <section>
+              <h3 className="text-md font-semibold mb-2 text-foreground">
+                Description
+              </h3>
+              <p className="text-default-600">{file.payload.description}</p>
+            </section>
+            <section>
+              <h3 className="text-md font-semibold mb-2 text-foreground">
+                Tags
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {(() => {
+                  let tagsArray: string[] = [];
+                  try {
+                    if (typeof file.payload.tags === "string") {
+                      // If tags is a JSON string, parse it
+                      tagsArray = JSON.parse(file.payload.tags);
+                    } else if (Array.isArray(file.payload.tags)) {
+                      // If tags is already an array
+                      tagsArray = file.payload.tags;
+                    }
+                  } catch (e) {
+                    // Silently handle tag parsing errors in production
+                    if (process.env.NODE_ENV === "development") {
+                      // ...existing code...
+                    }
+                  }
+                  return tagsArray.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 rounded-full bg-default text-foreground text-small"
+                    >
+                      {tag}
+                    </span>
+                  ));
+                })()}
+              </div>
+            </section>
+            <section>
+              <h3 className="text-md font-semibold mb-2 text-foreground">
+                File Information
+              </h3>
+              <div className="space-y-2">
+                <p className="text-small">
+                  <span className="text-default-500">Type:</span>{" "}
+                  {file.payload.file_type}
+                </p>
+                {file.payload.file_path && (
+                  <p className="text-small">
+                    <span className="text-default-500">Path:</span>{" "}
+                    {file.payload.file_path}
+                  </p>
+                )}
+              </div>
+            </section>
+          </div>
+        </div>
+        <div className="border-t border-divider p-4">
+          {file.payload.file_type === "link" ? (
+            <Button
+              size="lg"
+              className="w-full"
+              color="default"
+              href={file.payload.external_url || `#`}
+              as={Link}
+            >
+              Open Link
+            </Button>
+          ) : (
+            file.payload.file_path && (
+              <Button
+                size="lg"
+                className="w-full"
+                color="default"
+                as={Link}
+                href={`${
+                  process.env.NEXT_PUBLIC_API_URL
+                }/download?file_path=${encodeURIComponent(
+                  file.payload.file_path
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Download File
+              </Button>
+            )
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Background Decorative Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Left decorative plants */}
-        {/* <div className="absolute left-0 bottom-0 w-64 h-96 opacity-30">
-          <svg viewBox="0 0 200 300" className="w-full h-full text-slate-300">
-            <path
-              d="M20 280 Q30 250 25 220 Q35 190 30 160 Q40 130 35 100 Q45 70 40 40"
-              stroke="currentColor"
-              strokeWidth="3"
-              fill="none"
-            />
-            <path
-              d="M40 270 Q50 240 45 210 Q55 180 50 150 Q60 120 55 90 Q65 60 60 30"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="none"
-            /> */}
-        {/* Leaves */}
-        {/* <ellipse
-              cx="25"
-              cy="220"
-              rx="8"
-              ry="15"
-              fill="currentColor"
-              opacity="0.6"
-            />
-            <ellipse
-              cx="30"
-              cy="160"
-              rx="10"
-              ry="18"
-              fill="currentColor"
-              opacity="0.6"
-            />
-            <ellipse
-              cx="35"
-              cy="100"
-              rx="12"
-              ry="20"
-              fill="currentColor"
-              opacity="0.6"
-            />
-            <ellipse
-              cx="45"
-              cy="210"
-              rx="8"
-              ry="15"
-              fill="currentColor"
-              opacity="0.6"
-            />
-            <ellipse
-              cx="50"
-              cy="150"
-              rx="10"
-              ry="18"
-              fill="currentColor"
-              opacity="0.6"
-            />
-            <ellipse
-              cx="55"
-              cy="90"
-              rx="12"
-              ry="20"
-              fill="currentColor"
-              opacity="0.6"
-            />
-          </svg>
-        </div> */}
-
-        {/* Right decorative plants */}
-        {/* <div className="absolute right-0 bottom-0 w-80 h-96 opacity-20">
-          <svg viewBox="0 0 250 300" className="w-full h-full text-slate-300"> */}
-        {/* Large plant stems */}
-        {/* <path
-              d="M180 280 Q170 250 175 220 Q165 190 170 160 Q160 130 165 100 Q155 70 160 40"
-              stroke="currentColor"
-              strokeWidth="4"
-              fill="none"
-            />
-            <path
-              d="M200 270 Q210 240 205 210 Q215 180 210 150 Q220 120 215 90"
-              stroke="currentColor"
-              strokeWidth="3"
-              fill="none"
-            />
-            <path
-              d="M220 280 Q230 250 225 220 Q235 190 230 160"
-              stroke="currentColor"
-              strokeWidth="3"
-              fill="none"
-            /> */}
-        {/* Large leaves */}
-        {/* <ellipse
-              cx="175"
-              cy="220"
-              rx="15"
-              ry="25"
-              fill="currentColor"
-              opacity="0.5"
-            />
-            <ellipse
-              cx="170"
-              cy="160"
-              rx="18"
-              ry="30"
-              fill="currentColor"
-              opacity="0.5"
-            />
-            <ellipse
-              cx="165"
-              cy="100"
-              rx="20"
-              ry="35"
-              fill="currentColor"
-              opacity="0.5"
-            />
-            <ellipse
-              cx="205"
-              cy="210"
-              rx="12"
-              ry="22"
-              fill="currentColor"
-              opacity="0.5"
-            />
-            <ellipse
-              cx="210"
-              cy="150"
-              rx="15"
-              ry="28"
-              fill="currentColor"
-              opacity="0.5"
-            />
-            <ellipse
-              cx="225"
-              cy="220"
-              rx="10"
-              ry="20"
-              fill="currentColor"
-              opacity="0.5"
-            /> */}
-        {/* </svg>
-        </div> */}
-
-        {/* Floating circles */}
-        {/* <div className="absolute top-20 left-1/4 w-32 h-32 rounded-full bg-blue-200 opacity-20"></div>
-        <div className="absolute top-40 right-1/3 w-24 h-24 rounded-full bg-purple-200 opacity-25"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-40 h-40 rounded-full bg-pink-200 opacity-15"></div> */}
-      </div>
-
       {/* Main Content */}
       <div className="relative z-10">
         {/* Header */}
         <Navbar
           isBordered
           className={`
-        backdrop-blur-xs fixed top-0 left-0 right-0 z-50 
-        transition-all duration-500 ease-in
-        ${
-          scrolled
-            ? "max-w-md mx-auto mt-4 rounded-full shadow-xl border border-divider bg-background/90"
-            : "w-full rounded-none shadow-none bg-background/80"
-        }
-      `}
+            backdrop-blur-xs fixed top-0 left-0 right-0 z-50
+            transition-all duration-500 ease-in
+            ${
+              scrolled
+                ? "hidden"
+                : "w-full rounded-none shadow-none bg-background/80"
+            }
+          `}
         >
           <NavbarBrand>
             <p className="text-2xl text-foreground">OpenLog</p>
@@ -213,34 +372,164 @@ export default function SearchHomepage() {
         </Navbar>
 
         {/* Main Search Section */}
-        <div className="flex flex-col items-center justify-center min-h-[100vh] px-4">
-          <div className="w-full max-w-2xl">
-            {/* Search Input */}
-            <Input
-              type="text"
-              placeholder="Search"
-              value={searchQuery}
-              onValueChange={setSearchQuery}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch(e);
-                }
-              }}
-              //   size="lg"
-              radius="lg"
-              classNames={{
-                base: "max-w-full",
-                mainWrapper: "h-full",
-                input: "text-lg px-6 hover:outline-sm hover:bg-background",
-                inputWrapper:
-                  "h-16 px-6 shadow-xl border border-divider bg-background hover:!bg-background hover:border-2 transition-all duration-300",
-              }}
-              className="hover:outline-sm hover:bg-background"
-              startContent={
-                <SearchIcon className="text-slate-400 pointer-events-none flex-shrink-0 text-lg mr-2" />
-              }
-            />
+        <div className="flex min-h-[100vh]">
+          {/* Left Side - Search Results */}
+          <div
+            className={`flex-1 px-4 transition-all duration-300 ${
+              selectedFile ? "w-1/2" : "w-full"
+            }`}
+          >
+            <div className="max-w-2xl mx-auto space-y-4">
+              {/* Search Input and Controls */}
+              <div
+                className={`flex flex-col gap-2 fixed top-0 left-0 right-0 z-49 bg-background/80 backdrop-blur-sm p-4 border-b border-divider
+                  ease-in
+                  ${scrolled ? "mt-0" : "mt-16"}
+                  ${selectedFile ? "max-w-[50%]" : "max-w-2xl mx-auto"}
+                `}
+              >
+                <div className="flex gap-2 items-center justify-center w-full">
+                  <div className="relative w-full">
+                    <Input
+                      type="text"
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onValueChange={setSearchQuery}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSearch(e);
+                        }
+                      }}
+                      radius="lg"
+                      color="primary"
+                      classNames={{
+                        base: "w-full",
+                        mainWrapper: "h-12",
+                        input: "text-base px-4 bg-background text-foreground",
+                        inputWrapper:
+                          "h-12 px-4 bg-background border border-divider",
+                      }}
+                      startContent={
+                        <SearchIcon className="text-primary pointer-events-none flex-shrink-0 text-xl mr-2" />
+                      }
+                      endContent={
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            isSelected={isSemanticSearch}
+                            onValueChange={setIsSemanticSearch}
+                            size="sm"
+                            color="primary"
+                            className="ml-2"
+                          />
+                          <span className="text-xs text-default-600 min-w-[60px] text-left">
+                            {isSemanticSearch ? "Semantic" : "Traditional"}
+                          </span>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Search Controls */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {averageLatency && (
+                      <Chip size="sm" color="success" variant="flat">
+                        {averageLatency.toFixed(0)}ms
+                      </Chip>
+                    )}
+                  </div>
+
+                  {totalResults > 0 && (
+                    <span className="text-sm text-default-500">
+                      {results.length} of {totalResults} results
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {isLoading && (
+                <div className="flex justify-center py-8 mt-40">
+                  <Spinner size="lg" />
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="text-danger text-center py-4 mt-20">
+                  {error}
+                </div>
+              )}
+
+              {/* Search Results */}
+              {!isLoading && results.length > 0 && (
+                <div className="space-y-4 mt-45">
+                  {results.map((result) => (
+                    <Card
+                      key={result.id}
+                      className={`w-full cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                        selectedFile?.id === result.id ? "border-primary" : ""
+                      }`}
+                      isPressable
+                      onPress={() => handleViewFile(result)}
+                    >
+                      <CardHeader className="flex gap-3">
+                        <div className="flex flex-col">
+                          <p className="text-md font-semibold">
+                            {result.payload.title}
+                          </p>
+                          <p className="text-small text-default-500">
+                            Score: {(result.score * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                      </CardHeader>
+                      <CardBody>
+                        <p>{result.payload.description}</p>
+                      </CardBody>
+                      <CardFooter>
+                        <span className="text-small text-default-400">
+                          {new Date(
+                            result.payload.created_at
+                          ).toLocaleDateString()}
+                        </span>
+                      </CardFooter>
+                    </Card>
+                  ))}
+
+                  {/* Load More Button */}
+                  {hasMore && (
+                    <div className="flex justify-center py-4">
+                      <Button
+                        variant="bordered"
+                        onPress={handleLoadMore}
+                        isLoading={isLoading}
+                        disabled={isLoading}
+                      >
+                        Load More Results
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* No Results */}
+              {!isLoading && searchQuery && results.length === 0 && (
+                <div className="text-center py-8 mt-40 text-default-500">
+                  No results found for &ldquo;{searchQuery}&rdquo;
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Right Side - File Details */}
+          {selectedFile && (
+            <div
+              className={`w-1/2 border-l border-divider h-screen sticky overflow-y-auto mt-16`}
+            >
+              <FileDetails file={selectedFile} />
+            </div>
+          )}
         </div>
       </div>
     </div>
