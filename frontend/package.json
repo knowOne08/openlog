@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 4000 --turbopack",
-    "build": "next build",
-    "start": "next start -p 4000",
+    "dev": "next dev --turbopack -p 4000",
+    "build": "next build --turbopack",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {

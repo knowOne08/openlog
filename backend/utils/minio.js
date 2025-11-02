@@ -31,19 +31,85 @@ async function getFileUrl(objectName, expiry = 3600) {
  * @param {string} objectName - Name of the file to delete
  * @returns {Promise<void>}
  */
-
 async function deleteFile(objectName) {
     try {
-        await minioClient.removeObject("openlog-test-bucket", objectName);
+        await minioClient.removeObject(BUCKET, objectName);
+        console.log(`File ${objectName} deleted successfully from MinIO`);
     } catch (error) {
         console.error('MinIO delete error:', error);
         throw new Error(`MinIO Error: Failed to delete file ${objectName}`);
     }
 }
 
-async function getFileStream(objectName) {
-    await ensureBucket();
-    return minioClient.getObject(BUCKET, objectName);
+/**
+ * Check if a file exists in MinIO
+ * @param {string} objectName - Name of the file to check
+ * @returns {Promise<boolean>}
+ */
+async function fileExists(objectName) {
+    try {
+        await minioClient.statObject(BUCKET, objectName);
+        return true;
+    } catch (error) {
+        if (error.code === 'NotFound') {
+            return false;
+        }
+        throw error;
+    }
 }
 
-export { uploadFile, getFileUrl, deleteFile, getFileStream };
+/**
+ * Get file metadata from MinIO
+ * @param {string} objectName - Name of the file
+ * @returns {Promise<Object>}
+ */
+async function getFileMetadata(objectName) {
+    try {
+        const stat = await minioClient.statObject(BUCKET, objectName);
+        return {
+            name: objectName,
+            size: stat.size,
+            contentType: stat.metaData['content-type'],
+            lastModified: stat.lastModified,
+            etag: stat.etag,
+            metadata: stat.metaData
+        };
+    } catch (error) {
+        if (error.code === 'NotFound') {
+            throw new Error(`File not found: ${objectName}`);
+        }
+        throw new Error(`Failed to get file metadata: ${error.message}`);
+    }
+}
+
+/**
+ * List files in MinIO bucket
+ * @param {string} prefix - Optional prefix to filter files
+ * @param {number} limit - Maximum number of files to return
+ * @returns {Promise<Array>}
+ */
+async function listFiles(prefix = '', limit = 1000) {
+    try {
+        const files = [];
+        const stream = minioClient.listObjects(BUCKET, prefix, true);
+        
+        return new Promise((resolve, reject) => {
+            stream.on('data', obj => {
+                if (files.length < limit) {
+                    files.push({
+                        name: obj.name,
+                        size: obj.size,
+                        lastModified: obj.lastModified,
+                        etag: obj.etag
+                    });
+                }
+            });
+            stream.on('end', () => resolve(files));
+            stream.on('error', reject);
+        });
+    } catch (error) {
+        throw new Error(`Failed to list files: ${error.message}`);
+    }
+}
+
+export { uploadFile, getFileUrl, deleteFile, fileExists, getFileMetadata, listFiles };

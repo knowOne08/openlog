@@ -91,12 +91,15 @@ const limiter = rateLimit({
 });
 
 // Global Middleware
+import { transactionMonitor } from './middleware/transactionMonitor.js';
+
 app.use(helmet()); // Security headers
 app.use(cors(corsOptions)); // CORS
 app.use(limiter); // Rate limiting
 app.use(morgan(isProduction ? 'combined' : 'dev')); // Logging
 app.use(json({ limit: '50mb' })); // JSON parsing with size limit
 app.use(urlencoded({ extended: true, limit: '50mb' })); // URL encoded parsing
+app.use(transactionMonitor); // Transaction monitoring
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -110,54 +113,10 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-import authRoutes from './routes/auth.js';
-import uploadRoutes from './routes/upload.js';
-import searchRoutes from './routes/search.js';
-import downloadRoutes from './routes/download.js';
+import apiRoutes from './routes/index.js';
 
 // Mount routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/upload', uploadRoutes);
-app.use('/api/v1/search', searchRoutes);  // Search functionality with semantic and traditional search capabilities
-app.use('/api/v1/download', downloadRoutes); // New download route for MinIO file downloads
-
-// API Documentation endpoint
-app.get('/api/v1', (req, res) => {
-    res.json({
-        success: true,
-        message: 'OpenLog API v1',
-        endpoints: {
-            health: 'GET /health',
-            auth: {
-                login: 'POST /api/v1/auth/login',
-                refresh: 'POST /api/v1/auth/refresh',
-                logout: 'POST /api/v1/auth/logout',
-                profile: 'GET /api/v1/auth/profile',
-                changePassword: 'POST /api/v1/auth/change-password',
-                admin: {
-                    createMember: 'POST /api/v1/auth/admin/create-member',
-                    getMembers: 'GET /api/v1/auth/admin/members',
-                    updateMemberStatus: 'PUT /api/v1/auth/admin/members/:userId/status'
-                }
-            },
-            upload: {
-                file: 'POST /api/v1/upload/file',
-                link: 'POST /api/v1/upload/link'
-            },
-            search: {
-                query: 'POST /api/v1/search/query'
-            },
-            search: {
-                query: 'GET /api/v1/search',
-                suggestions: 'GET /api/v1/search/suggestions'
-            },
-            download: {
-                file: 'GET /api/v1/download/file/:filename'
-            }
-        },
-        documentation: 'https://docs.openlog.com'
-    });
-});
+app.use('/api/v1', apiRoutes);
 
 // 404 handler for unmatched routes
 app.use('*', (req, res) => {
@@ -169,6 +128,7 @@ app.use('*', (req, res) => {
             availableRoutes: [
                 'GET /health',
                 'GET /api/v1',
+                'POST /api/v1/auth/signup',
                 'POST /api/v1/auth/login',
                 'GET /api/v1/auth/profile'
             ]
@@ -252,6 +212,7 @@ const startServer = async () => {
             console.log(`📋 Health check: http://localhost:${PORT}/health`);
             console.log(`📚 API docs: http://localhost:${PORT}/api/v1`);
             console.log('\n📍 Available endpoints:');
+            console.log(`   POST http://localhost:${PORT}/api/v1/auth/signup`);
             console.log(`   POST http://localhost:${PORT}/api/v1/auth/login`);
             console.log(`   GET  http://localhost:${PORT}/api/v1/auth/profile`);
             console.log(`   POST http://localhost:${PORT}/api/v1/auth/admin/create-member`);

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useRedirectIfAuthenticated } from "@/hooks/useAuth";
 import {
   Card,
   CardBody,
@@ -16,23 +19,25 @@ import { EyeFilledIcon, EyeSlashFilledIcon } from "@heroui/shared-icons";
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { signup, isLoading, error, clearError } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already authenticated
+  useRedirectIfAuthenticated();
 
   const togglePasswordVisibility = () =>
     setIsPasswordVisible(!isPasswordVisible);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    clearError();
 
-    try {
-      // TODO: Implement signup logic with backend
-      console.log("Signing up with:", { email, password });
-    } catch (error) {
-      console.error("Signup error:", error);
-    } finally {
-      setIsLoading(false);
+    const result = await signup({ email, password, fullName });
+    if (result.success) {
+      console.log("Signup successful, redirecting to dashboard...");
+      router.push("/dashboard");
     }
   };
 
@@ -109,6 +114,27 @@ export default function SignUpPage() {
 
               {/* Sign-up Form */}
               <form onSubmit={handleSignUp} className="space-y-4">
+                {/* Error Display */}
+                {error && (
+                  <Card className="bg-danger-50 border-danger-200">
+                    <CardBody className="py-2">
+                      <p className="text-sm text-danger-600">{error}</p>
+                    </CardBody>
+                  </Card>
+                )}
+
+                {/* Full Name Input */}
+                <Input
+                  type="text"
+                  label="Full Name"
+                  value={fullName}
+                  onValueChange={setFullName}
+                  isRequired
+                  autoComplete="name"
+                  variant="bordered"
+                  size="lg"
+                />
+
                 {/* Email Input */}
                 <Input
                   type="email"

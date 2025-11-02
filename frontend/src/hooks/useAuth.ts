@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { auth, LoginCredentials, UserProfile } from "@/lib/auth";
+import { auth, LoginCredentials, SignupCredentials, UserProfile } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 
 export interface AuthState {
@@ -87,6 +87,37 @@ export function useAuth() {
     }
   }, []);
 
+  const signup = useCallback(async (credentials: SignupCredentials) => {
+    try {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+      const response = await auth.signup(credentials);
+
+      if (response.success && response.data) {
+        const user = response.data.user;
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+        return { success: true, user };
+      } else {
+        const errorMessage = response.error?.message || "Signup failed";
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: errorMessage,
+        }));
+        return { success: false, error: errorMessage };
+      }
+    } catch {
+      const errorMessage = "An unexpected error occurred during signup";
+      setState((prev) => ({ ...prev, isLoading: false, error: errorMessage }));
+      return { success: false, error: errorMessage };
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       setState((prev) => ({ ...prev, isLoading: true }));
@@ -133,6 +164,7 @@ export function useAuth() {
   return {
     ...state,
     login,
+    signup,
     logout,
     refreshProfile,
     clearError,
