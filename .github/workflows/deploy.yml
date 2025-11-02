@@ -1,0 +1,74 @@
+name: 🚀 Deploy Openlog
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Deploy frontend + backend
+        run: |
+          ssh -o StrictHostKeyChecking=no root@165.232.182.241 << 'EOF'
+            set -e
+
+            REPO_DIR="/root/prodapps/openlog-temp"
+            FRONTEND_DIR="/var/www/openlog"
+            BACKEND_DIR="/var/www/openlog-backend"
+
+            if [ -d "$REPO_DIR/.git" ]; then
+              echo "🔄 Pulling latest changes..."
+              cd "$REPO_DIR"
+              git reset --hard
+              git pull origin main
+            else
+              echo "⬇️ Cloning fresh repo..."
+              rm -rf "$REPO_DIR"
+              git clone git@github.com:knowOne08/openlog.git "$REPO_DIR"
+              cd "$REPO_DIR"
+            fi
+
+            echo "📦 Deploying frontend"
+            cd "$REPO_DIR/frontend"
+            npm ci
+            npm run build
+
+            rm -rf "$FRONTEND_DIR/*"
+            cp -r .next public package.json package-lock.json node_modules "$FRONTEND_DIR"
+
+            cd "$FRONTEND_DIR"
+            if pm2 describe "openlog" > /dev/null; then
+              pm2 restart "openlog"
+            else
+              pm2 start npm --name "openlog" -- start -- -p 4000
+            fi
+            pm2 save
+
+            echo "📦 Deploying backend"
+            cd "$REPO_DIR/backend"
+            npm ci --omit=dev
+
+            rm -rf "$BACKEND_DIR/*"
+            cp -r * "$BACKEND_DIR"
+
+            cd "$BACKEND_DIR"
+            if pm2 describe "openlog-backend" > /dev/null; then
+              pm2 restart "openlog-backend"
+            else
+              pm2 start npm --name "openlog-backend" -- run start
+            fi
+            pm2 save
+
+            echo "✅ Deployment finished!"
+          EOF

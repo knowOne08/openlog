@@ -101,9 +101,9 @@ export function useAuth() {
       });
 
       // Redirect to login page
-      router.push("/auth/signin");
-    } catch (error) {
-      console.error("Logout error:", error);
+      router.push('/auth/signin');
+    } catch {
+      console.error('Logout error');
       // Even if logout fails, clear local state
       setState({
         user: null,
