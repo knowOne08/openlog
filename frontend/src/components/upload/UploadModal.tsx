@@ -119,35 +119,6 @@ export default function UploadModal({
   const [tagInput, setTagInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = useCallback((file: File) => {
-    const validTypes = [
-      "image/",
-      "video/",
-      "application/pdf",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    ];
-    if (!validTypes.some((type) => file.type.startsWith(type))) {
-      alert("Please select an appropriate file type");
-      return;
-    }
-    setSelectedFile(file);
-    if (!fileFormData.title) {
-      const fileName = file.name.replace(/\.[^/.]+$/, "");
-      setFileFormData((prev) => ({ ...prev, title: fileName }));
-    }
-  }, [fileFormData.title]);
-  
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
   const handleFileSelect = useCallback(
     (file: File) => {
       const validTypes = [
@@ -169,6 +140,16 @@ export default function UploadModal({
     },
     [fileFormData.title]
   );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {

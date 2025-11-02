@@ -6,7 +6,7 @@ import authRoutes from './auth.js';
 import uploadRoutes from './upload.js';
 import searchRoutes from './search.js';
 import filesRoutes from './files.js';
-import testMinioRoutes from './test-minio.js';
+// import testMinioRoutes from './test-minio.js';
 import monitorRoutes from './monitor.js';
 
 const router = Router();
@@ -16,7 +16,7 @@ router.use('/auth', authRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/search', searchRoutes);
 router.use('/files', filesRoutes);
-router.use('/test', testMinioRoutes);
+// router.use('/test', testMinioRoutes);
 router.use('/monitor', monitorRoutes);
 
 // API Documentation endpoint for the routes
