@@ -14,19 +14,19 @@ const isProduction = process.env.NODE_ENV === 'production';
 // Override console methods for production
 if (isProduction) {
     // In production, disable console.log and console.debug
-    console.log = () => {};
-    console.debug = () => {};
-    
+    console.log = () => { };
+    console.debug = () => { };
+
     // Keep console.error and console.warn but sanitize them
     const originalError = console.error;
     const originalWarn = console.warn;
-    
+
     console.error = (...args) => {
         // Only log the first argument (message) and timestamp in production
         const message = typeof args[0] === 'string' ? args[0] : 'Error occurred';
         originalError(`[${new Date().toISOString()}] ${message}`);
     };
-    
+
     console.warn = (...args) => {
         // Only log the first argument (message) and timestamp in production
         const message = typeof args[0] === 'string' ? args[0] : 'Warning occurred';
@@ -38,7 +38,7 @@ if (isProduction) {
     const originalError = console.error;
     const originalWarn = console.warn;
     const originalDebug = console.debug;
-    
+
     console.log = (...args) => originalLog(`[${new Date().toISOString()}] [LOG]`, ...args);
     console.error = (...args) => originalError(`[${new Date().toISOString()}] [ERROR]`, ...args);
     console.warn = (...args) => originalWarn(`[${new Date().toISOString()}] [WARN]`, ...args);
