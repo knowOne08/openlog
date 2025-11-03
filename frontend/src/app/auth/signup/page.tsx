@@ -133,6 +133,7 @@ export default function SignUpPage() {
                   autoComplete="name"
                   variant="bordered"
                   size="lg"
+                  suppressHydrationWarning
                 />
 
                 {/* Email Input */}
@@ -145,6 +146,7 @@ export default function SignUpPage() {
                   autoComplete="email"
                   variant="bordered"
                   size="lg"
+                  suppressHydrationWarning
                 />
 
                 {/* Password Input */}
@@ -156,12 +158,14 @@ export default function SignUpPage() {
                   autoComplete="new-password"
                   variant="bordered"
                   size="lg"
+                  suppressHydrationWarning
                   endContent={
                     <button
                       className="focus:outline-none"
                       type="button"
                       onClick={togglePasswordVisibility}
                       aria-label="toggle password visibility"
+                      suppressHydrationWarning
                     >
                       {isPasswordVisible ? (
                         <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />

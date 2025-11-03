@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { getFileUrl, deleteFile } from '../utils/minio.js';
 import { supabaseClient } from '../config/db.js';
 import { deleteEmbedding } from '../utils/qdrant.js';
-import { deleteTags } from '../controllers/logic.js';
+import { deleteTags } from '../controllers/filesController.js';
 
 const router = Router();
 
@@ -20,17 +20,17 @@ router.get('/:fileId/download-url', async (req, res) => {
             .single();
 
         if (error || !fileRecord) {
-            return res.status(404).json({ 
-                success: false, 
-                error: 'File not found' 
+            return res.status(404).json({
+                success: false,
+                error: 'File not found'
             });
         }
 
         // Only generate URL for actual files, not links
         if (fileRecord.file_type === 'link') {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Cannot generate download URL for links' 
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot generate download URL for links'
             });
         }
 
@@ -84,9 +84,9 @@ router.get('/:fileId/metadata', async (req, res) => {
             .single();
 
         if (error || !fileRecord) {
-            return res.status(404).json({ 
-                success: false, 
-                error: 'File not found' 
+            return res.status(404).json({
+                success: false,
+                error: 'File not found'
             });
         }
 
@@ -103,7 +103,7 @@ router.get('/:fileId/metadata', async (req, res) => {
             visibility: fileRecord.visibility,
             createdAt: fileRecord.created_at,
             tags,
-            ...(fileRecord.file_type === 'link' 
+            ...(fileRecord.file_type === 'link'
                 ? { url: fileRecord.external_url }
                 : { fileName: fileRecord.file_path }
             )
@@ -136,9 +136,9 @@ router.delete('/:fileId', async (req, res) => {
             .single();
 
         if (error || !fileRecord) {
-            return res.status(404).json({ 
-                success: false, 
-                error: 'File not found' 
+            return res.status(404).json({
+                success: false,
+                error: 'File not found'
             });
         }
 
@@ -195,10 +195,10 @@ router.delete('/:fileId', async (req, res) => {
 // GET /api/files - List files with pagination
 router.get('/', async (req, res) => {
     try {
-        const { 
-            page = 1, 
-            limit = 20, 
-            type = 'all', 
+        const {
+            page = 1,
+            limit = 20,
+            type = 'all',
             visibility = 'all',
             owner_id,
             tag

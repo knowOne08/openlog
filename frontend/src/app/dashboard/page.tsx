@@ -2,7 +2,19 @@
 
 import { useRequireAuth } from "@/hooks/useAuth";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+// UserFile interface for type safety
+interface UserFile {
+  id: string;
+  title: string;
+  description: string;
+  fileType: string;
+  size: number;
+  mimeType: string;
+  visibility: string;
+  createdAt: string;
+}
 import Swal from "sweetalert2";
 import {
   Button,
@@ -20,7 +32,32 @@ import UploadModal from "@/components/upload/UploadModal";
 export default function DashboardPage() {
   const { isAuthenticated, isLoading } = useRequireAuth();
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [userFiles, setUserFiles] = useState<UserFile[]>([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [filesError, setFilesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    setFilesLoading(true);
+    setFilesError(null);
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/files?owner_id=${user.id}&limit=20`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data?.files)) {
+          setUserFiles(data.data.files);
+        } else {
+          setFilesError("Failed to load your documents.");
+        }
+      })
+      .catch((err) =>
+        setFilesError(err?.message || "Failed to load your documents.")
+      )
+      .finally(() => setFilesLoading(false));
+  }, [user?.id]);
 
   if (isLoading) {
     return (
@@ -133,11 +170,24 @@ export default function DashboardPage() {
                       </dd>
                     </div>
                   </div>
+
+                  {/* Change Password Button */}
+                  <div className="pt-2">
+                    <Button
+                      onPress={() => router.push("/dashboard/change-password")}
+                      variant="ghost"
+                      className="w-full justify-start"
+                      size="md"
+                    >
+                      Change Password
+                    </Button>
+                  </div>
                 </div>
               </CardBody>
             </Card>
 
-            {/* Quick Actions Card */}
+            {/*
+            Quick Actions Card
             <Card className="shadow-medium">
               <CardHeader className="pb-2">
                 <h3 className="text-lg font-medium text-foreground">
@@ -171,6 +221,88 @@ export default function DashboardPage() {
                     Settings
                   </Button>
                 </div>
+              </CardBody>
+            </Card>
+            */}
+
+            {/* User Files List */}
+            <Card className="shadow-medium col-span-1 md:col-span-2 lg:col-span-3">
+              <CardHeader className="pb-2">
+                <h3 className="text-lg font-medium text-foreground">
+                  Your Uploaded Documents({userFiles.length})
+                </h3>
+              </CardHeader>
+              <CardBody>
+                {filesLoading ? (
+                  <div className="py-4 text-center">
+                    <Spinner size="md" color="default" />
+                    <p className="text-foreground-700 mt-2">
+                      Loading your documents...
+                    </p>
+                  </div>
+                ) : filesError ? (
+                  <div className="py-4 text-center text-danger-600">
+                    {filesError}
+                  </div>
+                ) : userFiles.length === 0 ? (
+                  <div className="py-4 text-center text-foreground-500">
+                    No documents uploaded yet.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-divider">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-foreground-500 uppercase tracking-wider">
+                            Title
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-foreground-500 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-foreground-500 uppercase tracking-wider">
+                            Size
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-foreground-500 uppercase tracking-wider">
+                            Uploaded
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-foreground-500 uppercase tracking-wider">
+                            Visibility
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-divider">
+                        {userFiles.map((file) => (
+                          <tr key={file.id}>
+                            <td className="px-4 py-2 text-foreground">
+                              {file.title}
+                            </td>
+                            <td className="px-4 py-2 text-foreground-500">
+                              {file.mimeType}
+                            </td>
+                            <td className="px-4 py-2 text-foreground-500">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </td>
+                            <td className="px-4 py-2 text-foreground-500">
+                              {new Date(file.createdAt).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-2">
+                              <Chip
+                                color={
+                                  file.visibility === "public"
+                                    ? "success"
+                                    : "default"
+                                }
+                                size="sm"
+                              >
+                                {file.visibility}
+                              </Chip>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardBody>
             </Card>
           </div>

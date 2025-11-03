@@ -1,5 +1,5 @@
 import express from 'express';
-import { searchController } from '../controllers/logic.js';
+import { searchController } from '../controllers/searchController.js';
 import { rateLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
