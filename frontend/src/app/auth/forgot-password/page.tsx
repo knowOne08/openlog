@@ -17,17 +17,39 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
-      // TODO: Implement password reset logic with backend
-      console.log("Password reset requested for:", email);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Failed to send reset email");
+      }
+
       setIsSubmitted(true);
     } catch (error) {
       console.error("Password reset error:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to send password reset email"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -98,6 +120,12 @@ export default function ForgotPasswordPage() {
 
           <CardBody className="pt-6">
             <form className="space-y-6" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-danger-50 border border-danger-200 text-danger-800 px-4 py-3 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+
               <Input
                 type="email"
                 label="Email"
@@ -105,6 +133,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onValueChange={setEmail}
                 isRequired
+                suppressHydrationWarning
                 classNames={{
                   input: "text-sm",
                   label: "text-sm font-medium",

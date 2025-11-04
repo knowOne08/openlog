@@ -109,6 +109,7 @@ export default function SignInPage() {
                   autoComplete="email"
                   variant="bordered"
                   size="lg"
+                  suppressHydrationWarning
                 />
 
                 {/* Password Input */}
@@ -120,12 +121,14 @@ export default function SignInPage() {
                   autoComplete="current-password"
                   variant="bordered"
                   size="lg"
+                  suppressHydrationWarning
                   endContent={
                     <button
                       className="focus:outline-none"
                       type="button"
                       onClick={togglePasswordVisibility}
                       aria-label="toggle password visibility"
+                      suppressHydrationWarning
                     >
                       {isPasswordVisible ? (
                         <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
@@ -216,7 +219,7 @@ export default function SignInPage() {
       <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-content1">
         <div className="absolute inset-0 flex items-center justify-center">
           <Image
-            src="/images/hero_image.jpg"
+            src="/images/image.png"
             alt="Hero Image"
             className="w-full h-full object-cover"
             removeWrapper

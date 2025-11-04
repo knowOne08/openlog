@@ -9,9 +9,6 @@ import {
   NavbarItem,
   Spinner,
   Card,
-  CardBody,
-  CardHeader,
-  CardFooter,
   Link,
   Switch,
   Chip,
@@ -28,8 +25,13 @@ interface SearchResult {
     file_path?: string;
     external_url?: string;
     created_at: string;
+    updated_at?: string;
     tags: string[] | string;
     searchLatency?: number;
+    mime_type?: string;
+    file_size?: number;
+    visibility?: string;
+    owner_id?: string;
   };
 }
 
@@ -40,7 +42,7 @@ interface ApiResponse {
 
 export default function SearchHomepage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSemanticSearch, setIsSemanticSearch] = useState(true);
+  const [isSemanticSearch, setIsSemanticSearch] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState("");
@@ -254,6 +256,31 @@ export default function SearchHomepage() {
             </section>
             <section>
               <h3 className="text-md font-semibold mb-2 text-foreground">
+                File Information
+              </h3>
+              <div className="space-y-2">
+                {file.payload.file_path && (
+                  <p className="text-small text-default-600">
+                    <span className="text-foreground">Name:</span>{" "}
+                    {file.payload.file_path}
+                  </p>
+                )}
+                {file.payload.mime_type && (
+                  <p className="text-small text-default-500">
+                    <span className="text-foreground">Type:</span>{" "}
+                    {file.payload.mime_type}
+                  </p>
+                )}
+                {file.payload.file_size && (
+                  <p className="text-small text-default-500">
+                    <span className="text-foreground">Size:</span>{" "}
+                    {(file.payload.file_size / 1e6).toFixed(2)} MB
+                  </p>
+                )}
+              </div>
+            </section>
+            <section>
+              <h3 className="text-md font-semibold mb-2 text-foreground">
                 Tags
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -274,31 +301,11 @@ export default function SearchHomepage() {
                     }
                   }
                   return tagsArray.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 rounded-full bg-default text-foreground text-small"
-                    >
+                    <Chip key={index} size="sm" color="default" variant="flat">
                       {tag}
-                    </span>
+                    </Chip>
                   ));
                 })()}
-              </div>
-            </section>
-            <section>
-              <h3 className="text-md font-semibold mb-2 text-foreground">
-                File Information
-              </h3>
-              <div className="space-y-2">
-                <p className="text-small">
-                  <span className="text-default-500">Type:</span>{" "}
-                  {file.payload.file_type}
-                </p>
-                {file.payload.file_path && (
-                  <p className="text-small">
-                    <span className="text-default-500">Path:</span>{" "}
-                    {file.payload.file_path}
-                  </p>
-                )}
               </div>
             </section>
           </div>
@@ -320,14 +327,22 @@ export default function SearchHomepage() {
                 size="lg"
                 className="w-full"
                 color="default"
-                as={Link}
-                href={`${
-                  process.env.NEXT_PUBLIC_API_URL
-                }/download?file_path=${encodeURIComponent(
-                  file.payload.file_path
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={async () => {
+                  try {
+                    const res = await fetch(
+                      `${process.env.NEXT_PUBLIC_API_URL}/files/${file.id}/download-url`
+                    );
+                    const data = await res.json();
+                    if (data.success && data.data && data.data.downloadUrl) {
+                      window.open(data.data.downloadUrl, "_blank", "noopener");
+                    } else {
+                      alert("Failed to get download URL.");
+                    }
+                  } catch (err) {
+                    console.log(err);
+                    alert("Error fetching download URL.");
+                  }
+                }}
               >
                 Download File
               </Button>
@@ -400,30 +415,31 @@ export default function SearchHomepage() {
                           handleSearch(e);
                         }
                       }}
+                      variant="bordered"
                       radius="lg"
-                      color="primary"
+                      color="default"
                       classNames={{
                         base: "w-full",
                         mainWrapper: "h-12",
-                        input: "text-base px-4 bg-background text-foreground",
-                        inputWrapper:
-                          "h-12 px-4 bg-background border border-divider",
+                        input: "text-base px-4 text-foreground",
+                        inputWrapper: "h-12 px-4 bg-background",
                       }}
                       startContent={
-                        <SearchIcon className="text-primary pointer-events-none flex-shrink-0 text-xl mr-2" />
+                        <SearchIcon className="text-foreground/60 pointer-events-none flex-shrink-0 text-xl mr-2" />
                       }
                       endContent={
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center">
+                          <span className="text-xs text-default-600 min-w-[60px] text-left">
+                            {/* {isSemanticSearch ? "Semantic" : "Traditional"} */}
+                            Semantic
+                          </span>
                           <Switch
                             isSelected={isSemanticSearch}
                             onValueChange={setIsSemanticSearch}
                             size="sm"
                             color="primary"
-                            className="ml-2"
+                            className=""
                           />
-                          <span className="text-xs text-default-600 min-w-[60px] text-left">
-                            {isSemanticSearch ? "Semantic" : "Traditional"}
-                          </span>
                         </div>
                       }
                     />
@@ -465,37 +481,58 @@ export default function SearchHomepage() {
               {/* Search Results */}
               {!isLoading && results.length > 0 && (
                 <div className="space-y-4 mt-45">
-                  {results.map((result) => (
-                    <Card
-                      key={result.id}
-                      className={`w-full cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                        selectedFile?.id === result.id ? "border-primary" : ""
-                      }`}
-                      isPressable
-                      onPress={() => handleViewFile(result)}
-                    >
-                      <CardHeader className="flex gap-3">
-                        <div className="flex flex-col">
-                          <p className="text-md font-semibold">
-                            {result.payload.title}
-                          </p>
-                          <p className="text-small text-default-500">
-                            Score: {(result.score * 100).toFixed(1)}%
-                          </p>
-                        </div>
-                      </CardHeader>
-                      <CardBody>
-                        <p>{result.payload.description}</p>
-                      </CardBody>
-                      <CardFooter>
-                        <span className="text-small text-default-400">
-                          {new Date(
-                            result.payload.created_at
-                          ).toLocaleDateString()}
+                  {results.map((result) => {
+                    let tagsArray: string[] = [];
+                    try {
+                      if (typeof result.payload.tags === "string") {
+                        tagsArray = JSON.parse(result.payload.tags);
+                      } else if (Array.isArray(result.payload.tags)) {
+                        tagsArray = result.payload.tags;
+                      }
+                    } catch {}
+                    return (
+                      <Card
+                        key={result.id}
+                        className={`w-full cursor-pointer transition-all duration-300 hover:shadow-lg relative p-0 text-left ${
+                          selectedFile?.id === result.id ? "border-primary" : ""
+                        }`}
+                        isPressable
+                        onPress={() => handleViewFile(result)}
+                      >
+                        {/* Score in top-right */}
+                        <span className="absolute top-3 right-4 text-xs font-bold text-foreground bg-default/10 px-2 py-1 rounded-full z-10">
+                          {(result.score * 100).toFixed(1)}%
                         </span>
-                      </CardFooter>
-                    </Card>
-                  ))}
+                        <div className="px-6 py-4">
+                          {/* Title */}
+                          <h3 className="text-lg font-semibold text-foreground mb-1">
+                            {result.payload.title}
+                          </h3>
+                          {/* Divider */}
+                          <hr className="border-t border-divider my-2" />
+                          {/* Description */}
+                          <p className="text-default-700 text-small mb-3">
+                            {result.payload.description}
+                          </p>
+                          {/* Tags */}
+                          {tagsArray.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {tagsArray.map((tag, idx) => (
+                                <Chip
+                                  key={idx}
+                                  size="sm"
+                                  color="default"
+                                  variant="flat"
+                                >
+                                  {tag}
+                                </Chip>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
 
                   {/* Load More Button */}
                   {hasMore && (
@@ -525,7 +562,7 @@ export default function SearchHomepage() {
           {/* Right Side - File Details */}
           {selectedFile && (
             <div
-              className={`w-1/2 border-l border-divider h-screen sticky overflow-y-auto mt-16`}
+              className={`w-1/2 border-l border-divider h-screen sticky mt-22 overflow-y-auto`}
             >
               <FileDetails file={selectedFile} />
             </div>

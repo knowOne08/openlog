@@ -16,9 +16,35 @@ async function ensureBucket() {
     }
 }
 
-async function uploadFile(fileBuffer, objectName, mimetype = 'application/octet-stream') {
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+
+/**
+ * Always upload to MinIO using fPutObject for all file sizes.
+ * If a Buffer is provided, write it to a temp file first.
+ * @param {Buffer|string} fileBufferOrPath - Buffer or file path
+ * @param {string} objectName - Name of the object in MinIO
+ * @param {string} mimetype - MIME type of the file
+ * @returns {Promise<string>} - The object name
+ */
+async function uploadFile(fileBufferOrPath, objectName, mimetype = 'application/octet-stream') {
     await ensureBucket();
-    await minioClient.putObject(BUCKET, objectName, fileBuffer, fileBuffer.length, { 'Content-Type': mimetype });
+    let filePath = fileBufferOrPath;
+    let tempFile = null;
+    if (Buffer.isBuffer(fileBufferOrPath)) {
+        // Write buffer to a temp file
+        tempFile = path.join(os.tmpdir(), `minio-upload-${Date.now()}-${Math.random().toString(36).slice(2)}.tmp`);
+        fs.writeFileSync(tempFile, fileBufferOrPath);
+        filePath = tempFile;
+    }
+    try {
+        await minioClient.fPutObject(BUCKET, objectName, filePath, { 'Content-Type': mimetype });
+    } finally {
+        if (tempFile) {
+            fs.unlink(tempFile, () => { });
+        }
+    }
     return objectName;
 }
 
@@ -92,7 +118,7 @@ async function listFiles(prefix = '', limit = 1000) {
     try {
         const files = [];
         const stream = minioClient.listObjects(BUCKET, prefix, true);
-        
+
         return new Promise((resolve, reject) => {
             stream.on('data', obj => {
                 if (files.length < limit) {

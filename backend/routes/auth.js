@@ -1,6 +1,6 @@
-// routes/auth.js
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { requestPasswordReset, updatePassword, changePassword } from '../controllers/authController.js';
 const router = Router();
 
 // Initialize Supabase client
@@ -177,10 +177,10 @@ router.post('/signup', async (req, res) => {
 
         if (profileError) {
             console.error('Profile creation error:', profileError);
-            
+
             // If profile creation fails, we should clean up the auth user
             await supabase.auth.admin.deleteUser(authData.user.id);
-            
+
             return res.status(500).json({
                 success: false,
                 error: {
@@ -616,62 +616,6 @@ router.put('/admin/member-status/:userId', authenticateToken, requireAdmin, asyn
     }
 });
 
-// 7. CHANGE PASSWORD
-router.post('/change-password', authenticateToken, async (req, res) => {
-    try {
-        const { current_password, new_password } = req.body;
-
-        if (!current_password || !new_password) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: 'MISSING_PASSWORDS',
-                    message: 'Both current and new passwords are required'
-                }
-            });
-        }
-
-        // Update password in Supabase
-        const { data, error } = await supabase.auth.updateUser({
-            password: new_password
-        });
-
-        if (error) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: 'PASSWORD_UPDATE_FAILED',
-                    message: error.message
-                }
-            });
-        }
-
-        // Update profile to mark password as changed
-        await supabase
-            .from('user_profiles')
-            .update({
-                must_change_password: false,
-                updated_at: new Date().toISOString()
-            })
-            .eq('user_id', req.user.id);
-
-        res.json({
-            success: true,
-            message: 'Password changed successfully'
-        });
-
-    } catch (error) {
-        console.error('Change password error:', error);
-        res.status(500).json({
-            success: false,
-            error: {
-                code: 'PASSWORD_CHANGE_ERROR',
-                message: 'Password change failed due to server error'
-            }
-        });
-    }
-});
-
 // 8. GET CURRENT USER PROFILE
 router.get('/profile', authenticateToken, async (req, res) => {
     try {
@@ -714,6 +658,142 @@ router.get('/profile', authenticateToken, async (req, res) => {
             error: {
                 code: 'PROFILE_FETCH_ERROR',
                 message: 'Profile fetch failed due to server error'
+            }
+        });
+    }
+});
+
+// POST /api/v1/auth/forgot-password - Request password reset
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'MISSING_EMAIL',
+                    message: 'Email address is required'
+                }
+            });
+        }
+
+        const result = await requestPasswordReset(email);
+
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'PASSWORD_RESET_FAILED',
+                    message: result.error
+                }
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset email sent successfully',
+            data: {
+                email: result.email
+            }
+        });
+
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'SERVER_ERROR',
+                message: 'Failed to process password reset request'
+            }
+        });
+    }
+});
+
+// POST /api/v1/auth/reset-password - Update password with reset token
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'MISSING_FIELDS',
+                    message: 'Token and new password are required'
+                }
+            });
+        }
+
+        const result = await updatePassword(token, newPassword);
+
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'PASSWORD_UPDATE_FAILED',
+                    message: result.error
+                }
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Password updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'SERVER_ERROR',
+                message: 'Failed to reset password'
+            }
+        });
+    }
+});
+
+// POST /api/v1/auth/change-password - Change password for authenticated user
+router.post('/change-password', authenticateToken, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user.id;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'MISSING_FIELDS',
+                    message: 'Current password and new password are required'
+                }
+            });
+        }
+
+        const result = await changePassword(userId, currentPassword, newPassword);
+
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'PASSWORD_CHANGE_FAILED',
+                    message: result.error
+                }
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Password changed successfully'
+        });
+
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'SERVER_ERROR',
+                message: 'Failed to change password'
             }
         });
     }
