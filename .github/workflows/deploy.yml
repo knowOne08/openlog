@@ -63,6 +63,17 @@ jobs:
             cp -r * "$BACKEND_DIR"
 
             cd "$BACKEND_DIR"
+            
+            echo "🐳 Starting Docker services (MinIO + MeiliSearch)..."
+            docker-compose up -d
+            
+            echo "⏳ Waiting for services to be ready..."
+            sleep 15
+            
+            echo "🔍 Checking service health..."
+            timeout 60 bash -c 'until curl -s http://localhost:9000/minio/health/live > /dev/null; do sleep 2; done' || echo "⚠️ MinIO might still be starting"
+            timeout 60 bash -c 'until curl -s http://localhost:7700/health > /dev/null; do sleep 2; done' || echo "⚠️ MeiliSearch might still be starting"
+            
             if pm2 describe "openlog-backend" > /dev/null; then
               pm2 restart "openlog-backend"
             else
