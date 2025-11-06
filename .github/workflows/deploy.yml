@@ -6,7 +6,6 @@ on:
       - main
 
 jobs:
-  # Trigger Coolify deployment
   deploy-coolify:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
