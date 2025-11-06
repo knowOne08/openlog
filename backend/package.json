@@ -33,12 +33,13 @@
     "dev": "nodemon server.js",
     "prod": "node start-production.js",
     "prod:server-only": "NODE_ENV=production node server.js",
-    "services:start": "cd minio && ./start.sh",
-    "services:stop": "cd minio && docker-compose down",
-    "services:logs": "cd minio && docker-compose logs -f",
+    "prod:with-services": "./start-production.sh",
+    "services:start": "docker-compose up -d",
+    "services:stop": "docker-compose down",
+    "services:logs": "docker-compose logs -f",
     "services:restart": "npm run services:stop && npm run services:start",
     "health": "node health-check.js",
-    "setup": "cd minio && ./start.sh && cd .. && echo '\n🎯 Starting backend in 3 seconds...' && sleep 3 && npm start"
+    "setup": "npm run services:start && echo '\n🎯 Starting backend in 3 seconds...' && sleep 3 && npm start"
   },
   "keywords": [],
   "author": "",
