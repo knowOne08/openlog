@@ -4,30 +4,68 @@ import { index as meiliIndex } from '../utils/meili.js';
 import fetch from 'node-fetch';
 
 /**
- * Calls the local Python embedding microservice to get a 768-dim embedding for the given text.
- * Handles chunking and averaging in the Python service.
+ * Calls the Hugging Face Inference API to get embeddings using mixedbread-ai/mxbai-embed-large-v1 model.
+ * This model produces 1024-dimensional embeddings and supports retrieval-optimized prompts.
  * @param {string} text - The text to embed (e.g., description)
- * @returns {Promise<number[]>} - 768-dim embedding array
+ * @returns {Promise<number[]>} - 1024-dim embedding array
  */
 async function generateEmbedding(text) {
-    const EMBED_SERVICE_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:8000/embed';
+    const HF_API_URL = 'https://router.huggingface.co/hf-inference/models/mixedbread-ai/mxbai-embed-large-v1';
+    const HF_API_TOKEN = process.env.HF_API_TOKEN;
+    
+    if (!HF_API_TOKEN) {
+        throw new Error('HF_API_TOKEN environment variable is required for embedding generation');
+    }
+
     try {
-        const response = await fetch(EMBED_SERVICE_URL, {
+        // Add retrieval prompt for better search performance
+        const promptedText = `Represent this sentence for searching relevant passages: ${text}`;
+        
+        const response = await fetch(HF_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
+            headers: {
+                'Authorization': `Bearer ${HF_API_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                inputs: promptedText,
+                options: {
+                    wait_for_model: true
+                }
+            })
         });
+
         if (!response.ok) {
-            throw new Error(`Embedding service error: ${response.status} ${await response.text()}`);
+            const errorText = await response.text();
+            throw new Error(`Hugging Face API error: ${response.status} ${response.statusText} - ${errorText}`);
         }
-        const data = await response.json();
-        if (!data.embedding || !Array.isArray(data.embedding) || data.embedding.length !== 768) {
-            throw new Error('Invalid embedding returned from service');
+
+        const embedding = await response.json();
+        
+        // HF Inference API returns a single array for single input, or array of arrays for multiple inputs
+        let embeddingVector;
+        
+        if (Array.isArray(embedding)) {
+            // If it's an array of arrays (multiple inputs), take the first one
+            if (Array.isArray(embedding[0])) {
+                embeddingVector = embedding[0];
+            } else {
+                // If it's a single array (single input), use it directly
+                embeddingVector = embedding;
+            }
+        } else {
+            throw new Error('Invalid embedding format returned from Hugging Face API');
         }
-        return data.embedding;
+        
+        // Validate embedding dimensions (mxbai-embed-large-v1 produces 1024-dim embeddings)
+        if (!Array.isArray(embeddingVector) || embeddingVector.length !== 1024) {
+            throw new Error(`Expected 1024-dimensional embedding array, got ${Array.isArray(embeddingVector) ? embeddingVector.length : 'non-array'} dimensions`);
+        }
+
+        return embeddingVector;
     } catch (err) {
-        console.error('Embedding service call failed:', err);
-        throw err;
+        console.error('Hugging Face embedding generation failed:', err);
+        throw new Error(`Embedding generation failed: ${err.message}`);
     }
 }
 
