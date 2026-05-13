@@ -1,196 +1,199 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-);
-
-/**
- * Request password reset - sends reset email to user
- * @param {string} email - User's email address
- * @returns {Promise<Object>} - Result of password reset request
- */
-async function requestPasswordReset(email) {
+// Get current user's profile
+export async function getProfile(req, res) {
+    const userId = req.user.userId;
+    let connection;
     try {
-        console.log(`🔐 Password reset requested for: ${email}`);
-
-        // Validate email
-        if (!email || !email.includes('@')) {
-            throw new Error('Valid email address is required');
+        connection = await mysql.createConnection(dbConfig);
+        const [profiles] = await connection.execute('SELECT * FROM user_profiles WHERE user_id = ?', [userId]);
+        if (profiles.length === 0) {
+            return res.status(404).json({ success: false, error: 'User profile not found' });
         }
-
-        // Send password reset email using Supabase Auth
-        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password`,
-        });
-
-        if (error) {
-            console.error('Supabase password reset error:', error);
-            throw new Error(`Password reset failed: ${error.message}`);
-        }
-
-        console.log(`✅ Password reset email sent to: ${email}`);
-
-        return {
+        const profile = profiles[0];
+        res.json({
             success: true,
-            message: 'Password reset email sent successfully',
-            email
-        };
-
-    } catch (error) {
-        console.error('Password reset request error:', error);
-        return {
-            success: false,
-            error: error.message || 'Failed to send password reset email'
-        };
-    }
-}
-
-/**
- * Update user password with reset token
- * @param {string} token - Reset token from email
- * @param {string} newPassword - New password to set
- * @returns {Promise<Object>} - Result of password update
- */
-async function updatePassword(token, newPassword) {
-    try {
-        console.log('🔐 Updating password with reset token');
-
-        // Validate inputs
-        if (!token) {
-            throw new Error('Reset token is required');
-        }
-
-        if (!newPassword || newPassword.length < 8) {
-            throw new Error('Password must be at least 8 characters long');
-        }
-
-        // Create a new Supabase client with the user's access token
-        // This is necessary because password updates require an authenticated session
-        const userSupabase = createClient(
-            process.env.SUPABASE_URL,
-            process.env.SUPABASE_ANON_KEY, // Use anon key, not service key
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
+            data: {
+                user: {
+                    id: profile.user_id,
+                    email: profile.email,
+                    name: profile.name,
+                    role: profile.role,
+                    team: profile.team,
+                    is_active: profile.is_active,
+                    must_change_password: profile.must_change_password,
+                    created_at: profile.created_at
                 }
             }
-        );
-
-        // Set the session with the access token
-        const { data: sessionData, error: sessionError } = await userSupabase.auth.setSession({
-            access_token: token,
-            refresh_token: token // In password reset flow, access token is enough
         });
-
-        if (sessionError) {
-            console.error('Session error:', sessionError);
-            throw new Error(`Failed to authenticate with reset token: ${sessionError.message}`);
-        }
-
-        // Now update the password with the authenticated session
-        const { data, error } = await userSupabase.auth.updateUser({
-            password: newPassword
-        });
-
-        if (error) {
-            console.error('Password update error:', error);
-            throw new Error(`Password update failed: ${error.message}`);
-        }
-
-        console.log('✅ Password updated successfully');
-
-        return {
-            success: true,
-            message: 'Password updated successfully'
-        };
-
-    } catch (error) {
-        console.error('Password update error:', error);
-        return {
-            success: false,
-            error: error.message || 'Failed to update password'
-        };
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Server error' });
+    } finally {
+        if (connection) await connection.end();
     }
 }
 
-/**
- * Change password for authenticated user
- * @param {string} userId - User ID from authenticated session
- * @param {string} currentPassword - Current password for verification
- * @param {string} newPassword - New password to set
- * @returns {Promise<Object>} - Result of password change
- */
-async function changePassword(userId, currentPassword, newPassword) {
+// Authentication controller for MySQL-based OpenLog backend
+
+import mysql from 'mysql2/promise';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
+import { sendUserWelcomeEmail } from '../utils/mailer.js';
+
+const dbConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'openlog',
+};
+
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+const JWT_EXPIRES_IN = '8h';
+
+// Login
+export async function login(req, res) {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ success: false, error: 'Email and password are required' });
+    }
+    let connection;
     try {
-        console.log('🔐 Changing password for user:', userId);
-
-        // Validate inputs
-        if (!userId || !currentPassword || !newPassword) {
-            throw new Error('User ID, current password, and new password are required');
+        connection = await mysql.createConnection(dbConfig);
+        const [users] = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
+        if (users.length === 0) {
+            return res.status(401).json({ success: false, error: 'Invalid email or password' });
         }
-
-        if (newPassword.length < 8) {
-            throw new Error('New password must be at least 8 characters long');
+        const user = users[0];
+        const valid = await bcrypt.compare(password, user.password_hash);
+        if (!valid) {
+            return res.status(401).json({ success: false, error: 'Invalid email or password' });
         }
-
-        if (currentPassword === newPassword) {
-            throw new Error('New password must be different from current password');
-        }
-
-        // Get user's email from database
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
-
-        if (userError || !userData?.user?.email) {
-            console.error('User fetch error:', userError);
-            throw new Error('User not found');
-        }
-
-        const userEmail = userData.user.email;
-
-        // Create a client to verify current password
-        const verifyClient = createClient(
-            process.env.SUPABASE_URL,
-            process.env.SUPABASE_ANON_KEY
-        );
-
-        // Verify current password by attempting to sign in
-        const { data: signInData, error: signInError } = await verifyClient.auth.signInWithPassword({
-            email: userEmail,
-            password: currentPassword,
-        });
-
-        if (signInError) {
-            console.error('Current password verification failed:', signInError);
-            throw new Error('Current password is incorrect');
-        }
-
-        // Update password using admin API
-        const { data, error } = await supabase.auth.admin.updateUserById(userId, {
-            password: newPassword
-        });
-
-        if (error) {
-            console.error('Password change error:', error);
-            throw new Error(`Password change failed: ${error.message}`);
-        }
-
-        console.log('✅ Password changed successfully');
-
-        return {
+        // Get user profile
+        const [profiles] = await connection.execute('SELECT * FROM user_profiles WHERE user_id = ?', [user.id]);
+        const profile = profiles[0];
+        // JWT
+        const token = jwt.sign({ userId: user.id, role: profile.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+        res.json({
             success: true,
-            message: 'Password changed successfully'
-        };
-
-    } catch (error) {
-        console.error('Password change error:', error);
-        return {
-            success: false,
-            error: error.message || 'Failed to change password'
-        };
+            data: {
+                access_token: token,
+                refresh_token: 'dummy-refresh-token',
+                expires_at: null,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: profile.name,
+                    role: profile.role,
+                    team: profile.team,
+                    is_active: profile.is_active,
+                    must_change_password: profile.must_change_password,
+                    created_at: profile.created_at
+                }
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Server error' });
+    } finally {
+        if (connection) await connection.end();
     }
 }
 
-export { requestPasswordReset, updatePassword, changePassword };
+// Change password
+export async function changePassword(req, res) {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ success: false, error: 'Current and new password required' });
+    }
+    let connection;
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        const [users] = await connection.execute('SELECT * FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        const user = users[0];
+        const valid = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!valid) {
+            return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+        }
+        const hash = await bcrypt.hash(newPassword, 10);
+        await connection.execute('UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?', [hash, userId]);
+        await connection.execute('UPDATE user_profiles SET must_change_password = false WHERE user_id = ?', [userId]);
+        res.json({ success: true, message: 'Password changed successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Server error' });
+    } finally {
+        if (connection) await connection.end();
+    }
+}
+
+// Admin creates a new user
+export async function createUser(req, res) {
+    const { email, name, role = 'member', team = 'rocketry' } = req.body;
+    if (!email || !name) {
+        return res.status(400).json({ success: false, error: 'Email and name are required' });
+    }
+    if (!['admin', 'member'].includes(role)) {
+        return res.status(400).json({ success: false, error: 'Invalid role' });
+    }
+    let connection;
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        // Check if user exists
+        const [existing] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, error: 'User already exists' });
+        }
+        const userId = uuidv4();
+        // Set a random temp password and require change
+        const tempPassword = uuidv4().slice(0, 12);
+        const hash = await bcrypt.hash(tempPassword, 10);
+        const now = new Date();
+        await connection.execute('INSERT INTO users (id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)', [userId, email, hash, now, now]);
+        await connection.execute('INSERT INTO user_profiles (id, user_id, name, email, role, team, is_active, must_change_password, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [uuidv4(), userId, name, email, role, team, true, true, req.user.userId, now, now]);
+
+        // Send welcome email with credentials
+        const loginUrl = process.env.LOGIN_URL || 'http://localhost:3000/auth/signin';
+        try {
+            await sendUserWelcomeEmail({
+                to: email,
+                name,
+                tempPassword,
+                loginUrl
+            });
+        } catch (mailErr) {
+            // Log but do not fail user creation
+            console.error('Failed to send welcome email:', mailErr);
+        }
+
+        res.status(201).json({ success: true, message: 'User created', tempPassword });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Server error' });
+    } finally {
+        if (connection) await connection.end();
+    }
+}
+
+// Middleware: authenticate JWT
+export function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ success: false, error: 'Access token required' });
+    }
+    try {
+        const user = jwt.verify(token, JWT_SECRET);
+        req.user = user;
+        next();
+    } catch (err) {
+        return res.status(403).json({ success: false, error: 'Invalid or expired token' });
+    }
+}
+
+// Middleware: require admin role
+export function requireAdmin(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, error: 'Admin privileges required' });
+    }
+    next();
+}

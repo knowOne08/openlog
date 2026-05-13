@@ -23,10 +23,10 @@ export function ThemeSwitcher() {
     <Button
       onPress={toggleTheme}
       size="sm"
-      variant="shadow"
+      variant="ghost"
       className="bg-foreground text-background hover:bg-foreground/90"
       aria-label="Toggle dark mode"
-      style={{ minWidth: "40px", minHeight: "44px", borderRadius: "50%" }}
+      style={{ minWidth: "40px", minHeight: "40px", borderRadius: "50%" }}
     >
       {theme === "dark" ? (
         <SunIcon className="w-5 h-5 text-yellow-500" />

@@ -1,19 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import {
-  Input,
-  Button,
-  Navbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-  Spinner,
-  Card,
-  Link,
-  Switch,
-  Chip,
-} from "@heroui/react";
-import { SearchIcon } from "@heroui/shared-icons";
+import { useAuth } from "@/hooks/useAuth";
+import { Input, Button, Spinner, Link, Switch, Label } from "@heroui/react";
 
 interface SearchResult {
   id: string;
@@ -125,7 +113,7 @@ export default function SearchHomepage() {
 
           filteredResults = filteredResults.filter(
             (result: SearchResult) =>
-              new Date(result.payload.created_at) >= filterDate
+              new Date(result.payload.created_at) >= filterDate,
           );
         }
 
@@ -139,8 +127,9 @@ export default function SearchHomepage() {
               } else if (Array.isArray(result.payload.tags)) {
                 tagsArray = result.payload.tags;
               }
-            } catch (e) {
-              // ...existing code...
+            } catch (_e) {
+              // Silently handle tag parsing errors
+              alert(_e);
             }
             return tagsArray.some((tag: string) => selectedTags.includes(tag));
           });
@@ -150,13 +139,13 @@ export default function SearchHomepage() {
         const totalLatency = filteredResults.reduce(
           (sum: number, result: SearchResult) =>
             sum + (result.payload.searchLatency || 0),
-          0
+          0,
         );
 
         if (filteredResults.length > 0) {
           setAverageLatency(
             totalLatency / filteredResults.length +
-              latency / filteredResults.length
+              latency / filteredResults.length,
           );
         } else {
           setAverageLatency(null);
@@ -172,12 +161,10 @@ export default function SearchHomepage() {
 
         setTotalResults(data.total || filteredResults.length);
         setHasMore(data.hasMore || filteredResults.length === resultsPerPage);
-      } catch (err) {
+      } catch (_err) {
         setError("Failed to perform search. Please try again.");
+        console.log(_err);
         // Only log detailed errors in development
-        if (process.env.NODE_ENV === "development") {
-          // ...existing code...
-        }
       } finally {
         setIsLoading(false);
       }
@@ -189,7 +176,7 @@ export default function SearchHomepage() {
       selectedTags,
       currentPage,
       resultsPerPage,
-    ]
+    ],
   );
 
   // Memoize search function to prevent infinite loop
@@ -212,6 +199,8 @@ export default function SearchHomepage() {
   };
 
   const [scrolled, setScrolled] = useState(false);
+
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -294,16 +283,20 @@ export default function SearchHomepage() {
                       // If tags is already an array
                       tagsArray = file.payload.tags;
                     }
-                  } catch (e) {
+                  } catch (_e) {
                     // Silently handle tag parsing errors in production
                     if (process.env.NODE_ENV === "development") {
                       // ...existing code...
+                      alert(_e);
                     }
                   }
                   return tagsArray.map((tag, index) => (
-                    <Chip key={index} size="sm" color="default" variant="flat">
+                    <span
+                      key={index}
+                      className="text-sm px-3 py-1 rounded-full bg-default-100 text-default-800"
+                    >
                       {tag}
-                    </Chip>
+                    </span>
                   ));
                 })()}
               </div>
@@ -312,25 +305,20 @@ export default function SearchHomepage() {
         </div>
         <div className="border-t border-divider p-4">
           {file.payload.file_type === "link" ? (
-            <Button
-              size="lg"
-              className="w-full"
-              color="default"
-              href={file.payload.external_url || `#`}
-              as={Link}
-            >
-              Open Link
-            </Button>
+            <Link href={file.payload.external_url || `#`}>
+              <Button size="lg" className="w-full">
+                Open Link
+              </Button>
+            </Link>
           ) : (
             file.payload.file_path && (
               <Button
                 size="lg"
                 className="w-full"
-                color="default"
-                onClick={async () => {
+                onPress={async () => {
                   try {
                     const res = await fetch(
-                      `${process.env.NEXT_PUBLIC_API_URL}/files/${file.id}/download-url`
+                      `${process.env.NEXT_PUBLIC_API_URL}/files/${file.id}/download-url`,
                     );
                     const data = await res.json();
                     if (data.success && data.data && data.data.downloadUrl) {
@@ -338,9 +326,8 @@ export default function SearchHomepage() {
                     } else {
                       alert("Failed to get download URL.");
                     }
-                  } catch (err) {
-                    console.log(err);
-                    alert("Error fetching download URL.");
+                  } catch (_err) {
+                    alert(_err);
                   }
                 }}
               >
@@ -358,33 +345,39 @@ export default function SearchHomepage() {
       {/* Main Content */}
       <div className="relative z-10">
         {/* Header */}
-        <Navbar
-          isBordered
+        <nav
           className={`
             backdrop-blur-xs fixed top-0 left-0 right-0 z-50
             transition-all duration-500 ease-in
             ${
               scrolled
                 ? "hidden"
-                : "w-full rounded-none shadow-none bg-background/80"
+                : "w-full rounded-none shadow-none bg-background/80 px-4 py-3 border-b border-divider"
             }
           `}
         >
-          <NavbarBrand>
-            <p className="text-2xl text-foreground">OpenLog</p>
-          </NavbarBrand>
-          <NavbarContent justify="end">
-            <NavbarItem>
-              <Button
-                variant="light"
-                onPress={() => (window.location.href = "/auth/signin")}
-                className="text-foreground"
-              >
-                Sign in
-              </Button>
-            </NavbarItem>
-          </NavbarContent>
-        </Navbar>
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <p className="text-2xl font-bold text-foreground">OpenLog</p>
+            {!authLoading &&
+              (isAuthenticated ? (
+                <Button
+                  variant="ghost"
+                  onPress={() => (window.location.href = "/dashboard")}
+                  className="text-background bg-foreground"
+                >
+                  Dashboard
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  onPress={() => (window.location.href = "/auth/signin")}
+                  className="text-background bg-foreground"
+                >
+                  Sign in
+                </Button>
+              ))}
+          </div>
+        </nav>
 
         {/* Main Search Section */}
         <div className="flex min-h-[100vh]">
@@ -397,7 +390,7 @@ export default function SearchHomepage() {
             <div className="max-w-2xl mx-auto space-y-4">
               {/* Search Input and Controls */}
               <div
-                className={`flex flex-col gap-2 fixed top-0 left-0 right-0 z-49 bg-background/80 backdrop-blur-sm p-4 border-b border-divider
+                className={`flex flex-col gap-2 fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm p-4 border-b border-divider
                   ease-in
                   ${scrolled ? "mt-0" : "mt-16"}
                   ${selectedFile ? "max-w-[50%]" : "max-w-2xl mx-auto"}
@@ -409,40 +402,29 @@ export default function SearchHomepage() {
                       type="text"
                       placeholder="Search..."
                       value={searchQuery}
-                      onValueChange={setSearchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           handleSearch(e);
                         }
                       }}
-                      variant="bordered"
-                      radius="lg"
-                      color="default"
-                      classNames={{
-                        base: "w-full",
-                        mainWrapper: "h-12",
-                        input: "text-base px-4 text-foreground",
-                        inputWrapper: "h-12 px-4 bg-background",
-                      }}
-                      startContent={
-                        <SearchIcon className="text-foreground/60 pointer-events-none flex-shrink-0 text-xl mr-2" />
-                      }
-                      endContent={
-                        <div className="flex items-center">
-                          <span className="text-xs text-default-600 min-w-[60px] text-left">
-                            {/* {isSemanticSearch ? "Semantic" : "Traditional"} */}
-                            Semantic
-                          </span>
-                          <Switch
-                            isSelected={isSemanticSearch}
-                            onValueChange={setIsSemanticSearch}
-                            size="sm"
-                            color="primary"
-                            className=""
-                          />
-                        </div>
-                      }
+                      className="w-full h-12 px-4 text-base text-foreground bg-background border border-divider rounded-lg"
                     />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20">
+                      <Switch
+                        aria-label="Enable Semantic Search"
+                        isSelected={isSemanticSearch}
+                        onChange={setIsSemanticSearch}
+                        className="inline-flex items-center gap-3 rounded-full"
+                      >
+                        <Label className="text-sm font-medium text-default-700 whitespace-nowrap">
+                          Semantic
+                        </Label>
+                        <Switch.Control className="rounded-full bg-default-300 transition-colors data-[selected=true]:bg-primary data-[selected=true]:shadow-[0_0_0_1px_rgba(59,130,246,0.25)]">
+                          <Switch.Thumb className="rounded-full bg-white shadow-md transition-transform data-[selected=true]:translate-x-[18px]" />
+                        </Switch.Control>
+                      </Switch>
+                    </div>
                   </div>
                 </div>
 
@@ -450,9 +432,9 @@ export default function SearchHomepage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {averageLatency && (
-                      <Chip size="sm" color="success" variant="flat">
+                      <span className="text-sm text-success-600 px-3 py-1 rounded-full bg-success-50">
                         {averageLatency.toFixed(0)}ms
-                      </Chip>
+                      </span>
                     )}
                   </div>
 
@@ -491,19 +473,20 @@ export default function SearchHomepage() {
                       }
                     } catch {}
                     return (
-                      <Card
+                      <div
                         key={result.id}
-                        className={`w-full cursor-pointer transition-all duration-300 hover:shadow-lg relative p-0 text-left ${
-                          selectedFile?.id === result.id ? "border-primary" : ""
+                        className={`w-full cursor-pointer transition-all duration-300 hover:shadow-lg relative p-6 text-left border border-divider rounded-lg ${
+                          selectedFile?.id === result.id
+                            ? "border-primary bg-primary-50"
+                            : "bg-card"
                         }`}
-                        isPressable
-                        onPress={() => handleViewFile(result)}
+                        onClick={() => handleViewFile(result)}
                       >
                         {/* Score in top-right */}
                         <span className="absolute top-3 right-4 text-xs font-bold text-foreground bg-default/10 px-2 py-1 rounded-full z-10">
                           {(result.score * 100).toFixed(1)}%
                         </span>
-                        <div className="px-6 py-4">
+                        <div>
                           {/* Title */}
                           <h3 className="text-lg font-semibold text-foreground mb-1">
                             {result.payload.title}
@@ -518,19 +501,17 @@ export default function SearchHomepage() {
                           {tagsArray.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
                               {tagsArray.map((tag, idx) => (
-                                <Chip
+                                <span
                                   key={idx}
-                                  size="sm"
-                                  color="default"
-                                  variant="flat"
+                                  className="text-xs px-2 py-1 rounded-full bg-default-100 text-default-700"
                                 >
                                   {tag}
-                                </Chip>
+                                </span>
                               ))}
                             </div>
                           )}
                         </div>
-                      </Card>
+                      </div>
                     );
                   })}
 
@@ -538,10 +519,9 @@ export default function SearchHomepage() {
                   {hasMore && (
                     <div className="flex justify-center py-4">
                       <Button
-                        variant="bordered"
+                        variant="outline"
                         onPress={handleLoadMore}
-                        isLoading={isLoading}
-                        disabled={isLoading}
+                        isDisabled={isLoading}
                       >
                         Load More Results
                       </Button>

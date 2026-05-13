@@ -1,17 +1,92 @@
-import { supabaseClient } from '../config/db.js';
+// import { supabaseClient } from '../config/db.js';
+import { connection } from '../config/sql.js';
 import { uploadFile, deleteFile } from '../utils/minio.js';
-import { upsertEmbedding, deleteEmbedding } from '../utils/qdrant-skeleton.js';
+import { upsertEmbedding, deleteEmbedding } from '../utils/qdrant-new.js';
 import { v4 as uuidv4 } from 'uuid';
 import { index as meiliIndex } from '../utils/meili.js';
 import fetch from 'node-fetch';
+import 'dotenv/config';
 
-// Simulate summary, extraction, embedding generation with dummy functions
+// Extract text using Apache Tika server for PDF and DOCX, fallback for others
 async function extractText(fileBuffer, mimetype) {
-    return 'This will be covered in future versions'; // Replace with your logic
+    const supportedTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword'
+    ];
+    if (supportedTypes.includes(mimetype)) {
+        try {
+            const tikaUrl = 'http://localhost:9998/tika';
+            const response = await fetch(tikaUrl, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'text/plain',
+                    'Content-Type': mimetype
+                },
+                body: fileBuffer
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Tika server error: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+            const text = await response.text();
+            if (typeof text === 'string' && text.trim().length > 0) {
+                return text;
+            } else {
+                return '[Tika: No text extracted]';
+            }
+        } catch (err) {
+            console.error('Tika extraction failed:', err);
+            return '[Tika extraction error: ' + err.message + ']';
+        }
+    }
+    // Fallback for unsupported types
+    return '[No extractor for this filetype]';
 }
 
+
+// Generate summary using Groq API (Llama 8B Instant)
 async function generateSummary(text) {
-    return 'This is an AI-generated summary of the file.'; // Replace with LLM call
+    const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    if (!GROQ_API_KEY) {
+        throw new Error('GROQ_API_KEY environment variable is required for summary generation');
+    }
+    // Prompt: concise, use-case specific, minimal tokens
+    const prompt = `Summarize the following file or document for quick search and retrieval. Use 1-2 sentences, avoid repetition, and focus on the main topic and purpose.\n\nContent:\n"""${text.slice(0, 2000)}"""`;
+    try {
+        const response = await fetch(GROQ_API_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'llama-3.1-8b-instant',
+                messages: [
+                    { role: 'system', content: 'You are a helpful assistant that summarizes files for search and retrieval.' },
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: 120,
+                temperature: 0.2
+            })
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Groq API error: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        const data = await response.json();
+        const summary = data.choices?.[0]?.message?.content?.trim();
+        if (summary) {
+            console.log("summary", summary);
+            return summary;
+        } else {
+            return '[Groq: No summary returned]';
+        }
+    } catch (err) {
+        console.error('Groq summary generation failed:', err);
+        return '[Groq summary error: ' + err.message + ']';
+    }
 }
 
 /**
@@ -23,7 +98,7 @@ async function generateSummary(text) {
 async function generateEmbedding(text) {
     const HF_API_URL = 'https://router.huggingface.co/hf-inference/models/mixedbread-ai/mxbai-embed-large-v1';
     const HF_API_TOKEN = process.env.HF_API_TOKEN;
-    
+
     if (!HF_API_TOKEN) {
         throw new Error('HF_API_TOKEN environment variable is required for embedding generation');
     }
@@ -31,7 +106,7 @@ async function generateEmbedding(text) {
     try {
         // Add retrieval prompt for better search performance
         const promptedText = `Represent this sentence for searching relevant passages: ${text}`;
-        
+
         const response = await fetch(HF_API_URL, {
             method: 'POST',
             headers: {
@@ -52,10 +127,10 @@ async function generateEmbedding(text) {
         }
 
         const embedding = await response.json();
-        
+
         // HF Inference API returns a single array for single input, or array of arrays for multiple inputs
         let embeddingVector;
-        
+
         if (Array.isArray(embedding)) {
             // If it's an array of arrays (multiple inputs), take the first one
             if (Array.isArray(embedding[0])) {
@@ -67,7 +142,7 @@ async function generateEmbedding(text) {
         } else {
             throw new Error('Invalid embedding format returned from Hugging Face API');
         }
-        
+
         // Validate embedding dimensions (mxbai-embed-large-v1 produces 1024-dim embeddings)
         if (!Array.isArray(embeddingVector) || embeddingVector.length !== 1024) {
             throw new Error(`Expected 1024-dimensional embedding array, got ${Array.isArray(embeddingVector) ? embeddingVector.length : 'non-array'} dimensions`);
@@ -191,41 +266,50 @@ async function handleFileMetaData({ title, description, file, ownerId, visibilit
         const dbStepStart = Date.now();
         console.log('💾 [Step 4] Creating database record...');
         const uploadId = uuidv4();
-        const { data: supabaseRecord, error: supabaseError } = await supabaseClient
-            .from('uploads')
-            .insert([{
-                id: uploadId,
-                title,
-                description,
-                file_type: 'local_file',
-                file_path: objectName,
-                file_size: file.size,
-                mime_type: file.mimetype,
-                owner_id: ownerId,
-                visibility,
-                embeddings: embedding,
-                extracted_text,
-            }])
-            .select()
-            .single();
+        // const { data: supabaseRecord, error: supabaseError } = await supabaseClient
+        //     .from('uploads')
+        //     .insert([{
+        //         id: uploadId,
+        //         title,
+        //         description,
+        //         file_type: 'local_file',
+        //         file_path: objectName,
+        //         file_size: file.size,
+        //         mime_type: file.mimetype,
+        //         owner_id: ownerId,
+        //         visibility,
+        //         embeddings: embedding,
+        //         extracted_text,
+        //     }])
+        //     .select()
+        //     .single();
 
-        if (supabaseError || !supabaseRecord) {
-            throw new Error(`Database Error: ${supabaseError?.message || 'Failed to insert upload metadata'}`);
+        const uploadfile = "INSERT INTO uploads (id, title, description, file_type, file_path, file_size, mime_type, visibility, owner_id, extracted_text, embeddings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        const values = [uploadId, title, description, 'local_file', objectName, file.size, file.mimetype, visibility, ownerId, extracted_text, embedding];
+        let result = [];
+        try {
+            [result] = await connection.execute(uploadfile, values);
+        } catch (err) {
+            console.log(err);
         }
+
+        // if (supabaseError || !supabaseRecord) {
+        //     throw new Error(`Database Error: ${supabaseError?.message || 'Failed to insert upload metadata'}`);
+        // }
 
         transaction.steps.push('database_insert');
         transaction.rollbackActions.push({
             action: 'delete_database',
-            data: { uploadId: supabaseRecord.id }
+            data: { uploadId: uploadId }
         });
         transaction.stepTimes.database_insert = Date.now() - dbStepStart;
-        console.log(`✅ Database record created in ${transaction.stepTimes.database_insert}ms: ${supabaseRecord.id}`);
+        console.log(`✅ Database record created in ${transaction.stepTimes.database_insert}ms: ${uploadId}`);
 
         // Step 5: Store embeddings in Qdrant
         const qdrantStepStart = Date.now();
         console.log('🔍 [Step 5] Storing embeddings in Qdrant...');
         const qdrantResult = await upsertEmbedding(
-            supabaseRecord.id,
+            uploadId,
             embedding,
             {
                 title,
@@ -240,7 +324,7 @@ async function handleFileMetaData({ title, description, file, ownerId, visibilit
         transaction.steps.push('qdrant_upsert');
         transaction.rollbackActions.push({
             action: 'delete_qdrant',
-            data: { uploadId: supabaseRecord.id }
+            data: { uploadId: uploadId }
         });
         transaction.stepTimes.qdrant_upsert = Date.now() - qdrantStepStart;
         console.log(`✅ Embeddings stored in Qdrant in ${transaction.stepTimes.qdrant_upsert}ms`);
@@ -250,50 +334,89 @@ async function handleFileMetaData({ title, description, file, ownerId, visibilit
         console.log('🏷️ [Step 6] Processing tags...');
         const tagOperations = [];
 
+        // if (parsedTags.length > 0) {
+        //     for (const tagName of parsedTags) {
+        //         try {
+        //             // Upsert tag
+        //             const { data: tagData, error: tagError } = await supabaseClient
+        //                 .from('tags')
+        //                 .upsert({ name: tagName.trim() })
+        //                 .select('id')
+        //                 .single();
+
+        //             if (tagError || !tagData) {
+        //                 console.warn(`Warning: Failed to upsert tag "${tagName}": ${tagError?.message}`);
+        //                 continue;
+        //             }
+
+        //             // Link tag to upload
+        //             const { error: linkError } = await supabaseClient
+        //                 .from('upload_tags')
+        //                 .upsert({
+        //                     upload_id: supabaseRecord.id,
+        //                     tag_id: tagData.id
+        //                 });
+
+        //             if (linkError) {
+        //                 console.warn(`Warning: Failed to link tag "${tagName}": ${linkError.message}`);
+        //                 continue;
+        //             }
+
+        //             tagOperations.push({
+        //                 tag_name: tagName,
+        //                 tag_id: tagData.id,
+        //                 upload_id: supabaseRecord.id
+        //             });
+
+        //         } catch (tagError) {
+        //             console.warn(`Warning: Error processing tag "${tagName}": ${tagError.message}`);
+        //         }
+        //     }
+
+        //     transaction.steps.push('tags_processed');
+        //     transaction.rollbackActions.push({
+        //         action: 'delete_tags',
+        //         data: { uploadId: supabaseRecord.id }
+        //     });
+        // }
+
         if (parsedTags.length > 0) {
             for (const tagName of parsedTags) {
                 try {
-                    // Upsert tag
-                    const { data: tagData, error: tagError } = await supabaseClient
-                        .from('tags')
-                        .upsert({ name: tagName.trim() })
-                        .select('id')
-                        .single();
+                    const cleanTagName = tagName.trim();
 
-                    if (tagError || !tagData) {
-                        console.warn(`Warning: Failed to upsert tag "${tagName}": ${tagError?.message}`);
-                        continue;
+                    // 1. We check if the tag exists and get its ID, or insert it.
+                    // We use a SELECT first because LAST_INSERT_ID() doesn't work well with UUID strings.
+                    let [existingTags] = await connection.execute(
+                        "SELECT id FROM tags WHERE name = ?",
+                        [cleanTagName]
+                    );
+
+                    let tagId;
+                    if (existingTags.length > 0) {
+                        tagId = existingTags[0].id;
+                    } else {
+                        tagId = uuidv4();
+                        await connection.execute(
+                            "INSERT INTO tags (id, name) VALUES (?, ?)",
+                            [tagId, cleanTagName]
+                        );
                     }
 
-                    // Link tag to upload
-                    const { error: linkError } = await supabaseClient
-                        .from('upload_tags')
-                        .upsert({
-                            upload_id: supabaseRecord.id,
-                            tag_id: tagData.id
-                        });
+                    console.log("Using Tag ID:", tagId);
 
-                    if (linkError) {
-                        console.warn(`Warning: Failed to link tag "${tagName}": ${linkError.message}`);
-                        continue;
-                    }
+                    // 2. Link Tag to Upload
+                    // IMPORTANT: Make sure 'uploadId' here is the actual UUID of the file you just uploaded!
 
-                    tagOperations.push({
-                        tag_name: tagName,
-                        tag_id: tagData.id,
-                        upload_id: supabaseRecord.id
-                    });
+                    await connection.execute(
+                        "INSERT INTO upload_tags (upload_id, tag_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE upload_id=upload_id",
+                        [uploadId, tagId]
+                    );
 
-                } catch (tagError) {
-                    console.warn(`Warning: Error processing tag "${tagName}": ${tagError.message}`);
+                } catch (err) {
+                    console.warn(`Error: ${err.message}`);
                 }
             }
-
-            transaction.steps.push('tags_processed');
-            transaction.rollbackActions.push({
-                action: 'delete_tags',
-                data: { uploadId: supabaseRecord.id }
-            });
         }
 
         transaction.stepTimes.tags_processed = Date.now() - tagsStepStart;
@@ -309,7 +432,7 @@ async function handleFileMetaData({ title, description, file, ownerId, visibilit
         try {
             await meiliIndex.addDocuments([
                 {
-                    id: supabaseRecord.id,
+                    id: uploadId,
                     title,
                     description,
                     file_type: 'local_file',
@@ -323,13 +446,13 @@ async function handleFileMetaData({ title, description, file, ownerId, visibilit
                     tags: parsedTags
                 }
             ]);
-            console.log(`🔎 Indexed file ${supabaseRecord.id} in MeiliSearch`);
+            console.log(`🔎 Indexed file ${uploadId} in MeiliSearch`);
         } catch (meiliError) {
-            console.error(`MeiliSearch indexing failed for file ${supabaseRecord.id}:`, meiliError);
+            console.error(`MeiliSearch indexing failed for file ${result.id}:`, meiliError);
         }
 
         return {
-            ...supabaseRecord,
+            ...result,
             transaction_id: transaction.id,
             processed_tags: tagOperations.length,
             ai_summary,

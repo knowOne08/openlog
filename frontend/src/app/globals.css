@@ -1,10 +1,8 @@
 /* globals.css */
 
-/* 1. Import the new Tailwind v4 PostCSS plugin */
 @import "tailwindcss";
-@plugin './hero.ts';
-/* Note: You may need to change the path to fit your project structure */
-@source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+@import "@heroui/react/styles";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

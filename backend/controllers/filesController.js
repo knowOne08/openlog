@@ -1,4 +1,4 @@
-import { supabaseClient } from '../config/db.js';
+import { deleteUploadTags } from '../utils/mysqlDb.js';
 
 /**
  * Delete tags associated with an upload
@@ -7,15 +7,7 @@ import { supabaseClient } from '../config/db.js';
  */
 async function deleteTags(uploadId) {
     try {
-        // First delete the upload_tags associations
-        const { error: deleteTagsError } = await supabaseClient
-            .from('upload_tags')
-            .delete()
-            .match({ upload_id: uploadId });
-
-        if (deleteTagsError) {
-            throw new Error(`Failed to delete upload tags: ${deleteTagsError.message}`);
-        }
+        await deleteUploadTags(uploadId);
 
         console.log(`✅ Successfully deleted tags for upload: ${uploadId}`);
     } catch (error) {

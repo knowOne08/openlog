@@ -2,19 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useRedirectIfAuthenticated } from "@/hooks/useAuth";
-import {
-  Card,
-  CardBody,
-  Input,
-  Button,
-  Link as HeroUILink,
-  Image,
-  Spacer,
-} from "@heroui/react";
-import { EyeFilledIcon, EyeSlashFilledIcon } from "@heroui/shared-icons";
+import { Card, Input, Button, Label } from "@heroui/react";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -71,7 +64,7 @@ export default function SignUpPage() {
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
           <Card className="p-6 relative overflow-hidden shadow-none">
-            <CardBody className="space-y-6 relative z-10">
+            <div className="space-y-6 relative z-10">
               {/* Header */}
               <div className="text-center space-y-2">
                 <div className="text-4xl font-bold text-foreground mb-4">*</div>
@@ -82,8 +75,6 @@ export default function SignUpPage() {
                   A Window to your new World.
                 </p>
               </div>
-
-              <Spacer y={0} />
 
               {/* Social Sign-up Buttons - Commented out as in original */}
               {/* 
@@ -116,50 +107,53 @@ export default function SignUpPage() {
               <form onSubmit={handleSignUp} className="space-y-4">
                 {/* Error Display */}
                 {error && (
-                  <Card className="bg-danger-50 border-danger-200">
-                    <CardBody className="py-2">
-                      <p className="text-sm text-danger-600">{error}</p>
-                    </CardBody>
-                  </Card>
+                  <div className="rounded-md bg-danger-50 border border-danger-200 py-2 px-3">
+                    <p className="text-sm text-danger-600">{error}</p>
+                  </div>
                 )}
 
                 {/* Full Name Input */}
-                <Input
-                  type="text"
-                  label="Full Name"
-                  value={fullName}
-                  onValueChange={setFullName}
-                  isRequired
-                  autoComplete="name"
-                  variant="bordered"
-                  size="lg"
-                  suppressHydrationWarning
-                />
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="fullname">Full Name</Label>
+                  <Input
+                    id="fullname"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    autoComplete="name"
+                    suppressHydrationWarning
+                  />
+                </div>
 
                 {/* Email Input */}
-                <Input
-                  type="email"
-                  label="Email"
-                  value={email}
-                  onValueChange={setEmail}
-                  isRequired
-                  autoComplete="email"
-                  variant="bordered"
-                  size="lg"
-                  suppressHydrationWarning
-                />
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    autoComplete="email"
+                    suppressHydrationWarning
+                  />
+                </div>
 
                 {/* Password Input */}
-                <Input
-                  label="Password"
-                  value={password}
-                  onValueChange={setPassword}
-                  isRequired
-                  autoComplete="new-password"
-                  variant="bordered"
-                  size="lg"
-                  suppressHydrationWarning
-                  endContent={
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      autoComplete="new-password"
+                      suppressHydrationWarning
+                      type={isPasswordVisible ? "text" : "password"}
+                      className="flex-1"
+                    />
                     <button
                       className="focus:outline-none"
                       type="button"
@@ -168,43 +162,19 @@ export default function SignUpPage() {
                       suppressHydrationWarning
                     >
                       {isPasswordVisible ? (
-                        <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                        <EyeSlashIcon className="h-5 w-5 text-default-400 pointer-events-none" />
                       ) : (
-                        <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                        <EyeIcon className="h-5 w-5 text-default-400 pointer-events-none" />
                       )}
                     </button>
-                  }
-                  type={isPasswordVisible ? "text" : "password"}
-                />
+                  </div>
+                </div>
 
                 {/* Submit Button */}
                 <Button
                   type="submit"
                   className="w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
-                  size="lg"
-                  isLoading={isLoading}
-                  spinner={
-                    <svg
-                      className="animate-spin h-5 w-5 text-current"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  }
+                  isDisabled={isLoading}
                 >
                   {isLoading ? "Signing up..." : "Sign up"}
                 </Button>
@@ -214,42 +184,36 @@ export default function SignUpPage() {
               <div className="text-center space-y-2 text-sm text-foreground-600">
                 <div>
                   By signing up, I agree to OpenLog&apos;s{" "}
-                  <HeroUILink
-                    as={Link}
+                  <Link
                     href="/terms"
-                    size="sm"
-                    className="hover:text-foreground-800"
+                    className="text-foreground-600 hover:text-foreground-800 underline"
                   >
                     Terms & Privacy Policy
-                  </HeroUILink>
+                  </Link>
                 </div>
                 <div>
                   Already have an account?{" "}
-                  <HeroUILink
-                    as={Link}
+                  <Link
                     href="/auth/signin"
-                    size="sm"
-                    className="hover:text-foreground-800"
+                    className="text-foreground-600 hover:text-foreground-800 underline"
                   >
                     Sign in
-                  </HeroUILink>
+                  </Link>
                 </div>
               </div>
-            </CardBody>
+            </div>
           </Card>
         </div>
       </div>
 
       {/* Right Panel - Hero Image */}
       <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-content1">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Image
-            src="/images/hero_image.jpg"
-            alt="Hero Image"
-            className="w-full h-full object-cover"
-            removeWrapper
-          />
-        </div>
+        <Image
+          src="/images/hero_image.jpg"
+          alt="Hero Image"
+          fill
+          className="object-cover"
+        />
       </div>
     </div>
   );

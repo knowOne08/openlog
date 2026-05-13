@@ -16,16 +16,7 @@ interface UserFile {
   createdAt: string;
 }
 import Swal from "sweetalert2";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Avatar,
-  Chip,
-  Spinner,
-  Divider,
-} from "@heroui/react";
+import { Button, Card, Avatar, Chip, Spinner } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import UploadModal from "@/components/upload/UploadModal";
 
@@ -43,7 +34,7 @@ export default function DashboardPage() {
     setFilesLoading(true);
     setFilesError(null);
     fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/files?owner_id=${user.id}&limit=20`
+      `${process.env.NEXT_PUBLIC_API_URL}/files?owner_id=${user.id}&limit=20`,
     )
       .then((res) => res.json())
       .then((data) => {
@@ -54,7 +45,7 @@ export default function DashboardPage() {
         }
       })
       .catch((err) =>
-        setFilesError(err?.message || "Failed to load your documents.")
+        setFilesError(err?.message || "Failed to load your documents."),
       )
       .finally(() => setFilesLoading(false));
   }, [user?.id]);
@@ -63,7 +54,7 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
-          <Spinner size="lg" color="default" />
+          <Spinner color="current" />
           <p className="text-foreground-700">Loading...</p>
         </div>
       </div>
@@ -86,14 +77,14 @@ export default function DashboardPage() {
             <div className="flex items-center space-x-4">
               <Button
                 onPress={() => setIsUploadModalOpen(true)}
-                className="bg-foreground text-background hover:bg-foreground/90"
-                startContent={<PlusIcon className="h-5 w-5" />}
+                className="bg-foreground text-background hover:bg-foreground/90 flex items-center gap-2"
                 size="sm"
               >
+                <PlusIcon className="h-5 w-5" />
                 Upload
               </Button>
               {/* <span className="text-foreground-700">Welcome, {user?.name}</span> */}
-              <Button onPress={logout} variant="bordered" size="sm">
+              <Button onPress={logout} variant="danger" size="sm">
                 Logout
               </Button>
             </div>
@@ -107,13 +98,15 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* User Profile Card */}
             <Card className="shadow-medium">
-              <CardBody className="p-6">
+              <div className="p-6">
                 <div className="flex items-center space-x-4">
-                  <Avatar
-                    name={user?.name}
-                    size="lg"
-                    className="bg-primary-100 text-primary-600"
-                  />
+                  <Avatar size="lg" className="border-2 border-foreground">
+                    {(user?.name || "U")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()}
+                  </Avatar>
                   <div className="flex-1">
                     <h3 className="text-lg font-medium text-foreground">
                       {user?.name}
@@ -122,7 +115,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <Divider className="my-4" />
+                <div className="border-t border-divider my-4"></div>
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -152,7 +145,6 @@ export default function DashboardPage() {
                       <dd className="mt-1">
                         <Chip
                           color={user?.is_active ? "success" : "danger"}
-                          variant="flat"
                           size="sm"
                         >
                           {user?.is_active ? "Active" : "Inactive"}
@@ -175,7 +167,7 @@ export default function DashboardPage() {
                   <div className="pt-2">
                     <Button
                       onPress={() => router.push("/dashboard/change-password")}
-                      variant="ghost"
+                      variant="outline"
                       className="w-full justify-start"
                       size="md"
                     >
@@ -183,18 +175,18 @@ export default function DashboardPage() {
                     </Button>
                   </div>
                 </div>
-              </CardBody>
+              </div>
             </Card>
 
             {/*
             Quick Actions Card
             <Card className="shadow-medium">
-              <CardHeader className="pb-2">
+              <div className="pb-2 p-6">
                 <h3 className="text-lg font-medium text-foreground">
                   Quick Actions
                 </h3>
-              </CardHeader>
-              <CardBody className="pt-2">
+              </div>
+              <div className="pt-2 p-6">
                 <div className="space-y-3">
                   <Button
                     onPress={() => console.log("Change password clicked")}
@@ -221,25 +213,20 @@ export default function DashboardPage() {
                     Settings
                   </Button>
                 </div>
-              </CardBody>
+              </div>
             </Card>
             */}
 
             {/* User Files List */}
             <Card className="shadow-medium col-span-1 md:col-span-2 lg:col-span-3">
-              <CardHeader className="pb-2">
+              <div className="pb-2 p-6">
                 <h3 className="text-lg font-medium text-foreground">
                   Your Uploaded Documents({userFiles.length})
                 </h3>
-              </CardHeader>
-              <CardBody>
+              </div>
+              <div className="p-6">
                 {filesLoading ? (
-                  <div className="py-4 text-center">
-                    <Spinner size="md" color="default" />
-                    <p className="text-foreground-700 mt-2">
-                      Loading your documents...
-                    </p>
-                  </div>
+                  <Spinner />
                 ) : filesError ? (
                   <div className="py-4 text-center text-danger-600">
                     {filesError}
@@ -303,13 +290,13 @@ export default function DashboardPage() {
                     </table>
                   </div>
                 )}
-              </CardBody>
+              </div>
             </Card>
           </div>
         </div>
       </main>
 
-      {/* Upload Modal */}
+      {/* Upload Modal - Positioned outside main content */}
       <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}

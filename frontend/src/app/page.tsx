@@ -1,17 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Divider,
-  Navbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-} from "@heroui/react";
+import { Button, Card, Chip } from "@heroui/react";
+import Link from "next/link";
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
@@ -28,54 +18,41 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header using HeroUI Navbar */}
-      <Navbar
-        isBordered
+      {/* Header Navigation */}
+      <nav
         className={`
-        backdrop-blur-xs fixed top-0 left-0 right-0 z-50 
+        fixed top-0 left-0 right-0 z-50 
         transition-all duration-500 ease-in
+        backdrop-blur-xs border-b border-divider
         ${
           scrolled
-            ? "max-w-md mx-auto mt-4 h-1/12 rounded-full shadow-xl border border-divider bg-background/90"
+            ? "max-w-md mx-auto mt-4 rounded-full shadow-xl bg-background/90"
             : "w-full rounded-none shadow-none bg-background/80"
         }
       `}
       >
-        <NavbarBrand>
-          <p className={`${scrolled} ? text-xl :text-2xl text-foreground`}>
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div
+            className={`${scrolled ? "text-xl" : "text-2xl"} text-foreground font-bold`}
+          >
             OpenLog
-          </p>
-        </NavbarBrand>
-        <NavbarContent justify="end">
-          <NavbarItem>
-            <Button
-              variant="light"
-              onPress={() => (window.location.href = "/auth/signin")}
-              className="text-foreground"
-            >
-              Sign in
-            </Button>
-            <Button
-              variant="light"
-              onPress={() => (window.location.href = "/dashboard")}
-              className="text-foreground"
-            >
-              Dashboard
-            </Button>
-          </NavbarItem>
-        </NavbarContent>
-      </Navbar>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link href="/auth/signin">
+              <Button variant="ghost">Sign in</Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="ghost" className="text-background bg-foreground">
+                Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </nav>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <Chip
-          color="default"
-          variant="flat"
-          className="mb-6 bg-gray-100 text-gray-800 pl-2"
-          startContent={
-            <span className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
-          }
-        >
+      <div className="max-w-7xl mx-auto px-6 py-20 mt-20 text-center">
+        <Chip color="default" className="mb-6 bg-gray-100 text-gray-800">
           System Ready
         </Chip>
 
@@ -92,70 +69,75 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Button
-            size="lg"
-            className="bg-foreground text-background"
-            onPress={() => (window.location.href = "/auth/signin")}
-          >
-            Sign In
-          </Button>
-          <Button
-            size="lg"
-            variant="bordered"
-            className=""
-            onPress={() => (window.location.href = "/auth/signup")}
-          >
-            Get Started
-          </Button>
+          <Link href="/auth/signin">
+            <Button size="lg" variant="tertiary">
+              Sign In
+            </Button>
+          </Link>
+          {/* <Link href="/auth/signup">
+            <Button size="lg" variant="outline">
+              Get Started
+            </Button>
+          </Link> */}
         </div>
       </div>
 
-      {/* Footer using Cards */}
+      {/* Footer */}
       <div className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* OpenLog Column */}
             <Card className="bg-transparent shadow-none">
-              <CardBody className="p-0">
+              <div className="p-0">
                 <h3 className="text-xl text-white mb-4">OpenLog</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
                   Modern searching designed for scalability and security.
                 </p>
-              </CardBody>
+              </div>
             </Card>
 
+            {/* Quick Links Column */}
             <Card className="bg-transparent shadow-none">
-              <CardHeader className="p-0 pb-4">
+              <div className="p-0 pb-4">
                 <h4 className="text-white font-semibold">Quick Links</h4>
-              </CardHeader>
-              <CardBody className="p-0 space-y-2">
-                <Button
-                  className="justify-start bg-transparent p-0 text-gray-400 hover:text-teal-400 min-h-unit-6 h-auto"
-                  onPress={() => (window.location.href = "/auth/signin")}
-                >
-                  Sign In
-                </Button>
-                <Button
-                  className="justify-start bg-transparent p-0 text-gray-400 hover:text-teal-400 min-h-unit-6 h-auto"
-                  onPress={() => (window.location.href = "/auth/signup")}
-                >
-                  Create Account
-                </Button>
-                <Button
-                  className="justify-start bg-transparent p-0 text-gray-400 hover:text-teal-400 min-h-unit-6 h-auto"
-                  onPress={() => (window.location.href = "/dashboard")}
-                >
-                  Dashboard
-                </Button>
-              </CardBody>
+              </div>
+              <div className="p-0 space-y-2">
+                <Link href="/auth/signin">
+                  <Button
+                    variant="ghost"
+                    className="justify-start text-gray-400 hover:text-teal-400"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button
+                    variant="ghost"
+                    className="justify-start text-gray-400 hover:text-teal-400"
+                  >
+                    Create Account
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button
+                    variant="ghost"
+                    className="justify-start text-gray-400 hover:text-teal-400"
+                  >
+                    Dashboard
+                  </Button>
+                </Link>
+              </div>
             </Card>
 
+            {/* Resources Column */}
             <Card className="bg-transparent shadow-none">
-              <CardHeader className="p-0 pb-4">
+              <div className="p-0 pb-4">
                 <h4 className="text-white font-semibold">Resources</h4>
-              </CardHeader>
-              <CardBody className="p-0 space-y-2">
+              </div>
+              <div className="p-0 space-y-2">
                 <Button
-                  className="justify-start bg-transparent p-0 text-gray-400 hover:text-teal-400 min-h-unit-6 h-auto"
+                  variant="ghost"
+                  className="justify-start text-gray-400 hover:text-teal-400"
                   onPress={() =>
                     window.open("https://nextjs.org/learn", "_blank")
                   }
@@ -163,27 +145,29 @@ export default function Home() {
                   📄 Documentation
                 </Button>
                 <Button
-                  className="justify-start bg-transparent w-fit p-0 text-gray-400 hover:text-teal-400 min-h-unit-6 h-auto"
+                  variant="ghost"
+                  className="justify-start text-gray-400 hover:text-teal-400"
                   onPress={() =>
                     window.open(
                       "https://vercel.com/templates?framework=next.js",
-                      "_blank"
+                      "_blank",
                     )
                   }
                 >
                   🪟 Templates
                 </Button>
                 <Button
-                  className="justify-start bg-transparent p-0 text-gray-400 hover:text-teal-400 min-h-unit-6 h-auto"
+                  variant="ghost"
+                  className="justify-start text-gray-400 hover:text-teal-400"
                   onPress={() => window.open("https://nextjs.org", "_blank")}
                 >
                   🌐 Next.js
                 </Button>
-              </CardBody>
+              </div>
             </Card>
           </div>
 
-          <Divider className="bg-gray-800 mb-8" />
+          <div className="border-t border-gray-800 mb-8" />
 
           <div className="text-center">
             <p className="text-gray-400 text-sm">

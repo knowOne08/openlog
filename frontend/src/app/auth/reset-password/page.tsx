@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, CardHeader, Input, Button, Link } from "@heroui/react";
-import { CheckIcon, ChevronLeftIcon } from "@heroui/shared-icons";
+import { Card, CardBody, CardHeader, Input, Button, Link } from "@/components/ui/heroui";
+import { CheckIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
 
 export default function ResetPasswordPage() {
   const router = useRouter();

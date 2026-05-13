@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getFileUrl, deleteFile } from '../utils/minio.js';
-import { supabaseClient } from '../config/db.js';
+// import { supabaseClient } from '../config/db.js';
+import { connection } from '../config/sql.js'
 import { deleteEmbedding } from '../utils/qdrant.js';
 import { deleteTags } from '../controllers/filesController.js';
 
@@ -206,49 +207,74 @@ router.get('/', async (req, res) => {
 
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
-        let query = supabaseClient
-            .from('uploads')
-            .select(`
-                id,
-                title,
-                description,
-                file_type,
-                file_size,
-                mime_type,
-                visibility,
-                created_at,
-                owner_id,
-                upload_tags(
-                    tags(name)
-                )
-            `, { count: 'exact' });
+        // let query = supabaseClient
+        //     .from('uploads')
+        //     .select(`
+        //         id,
+        //         title,
+        //         description,
+        //         file_type,
+        //         file_size,
+        //         mime_type,
+        //         visibility,
+        //         created_at,
+        //         owner_id,
+        //         upload_tags(
+        //             tags(name)
+        //         )
+        //     `, { count: 'exact' });
+
+        const [user_uploaded_files] = await connection.execute(`
+            SELECT id, title, description, file_type, file_size, mime_type, visibility, created_at,owner_id
+            FROM uploads 
+            WHERE owner_id = ?
+            LIMIT ?
+            OFFSET ?
+            `, [owner_id, String(limit), String(offset)]);
+        console.log(user_uploaded_files, user_uploaded_files.length);
+
 
         // Apply filters
-        if (type !== 'all') {
-            query = query.eq('file_type', type);
-        }
+        // if (type !== 'all') {
+        //     query = query.eq('file_type', type);
+        // }
 
-        if (visibility !== 'all') {
-            query = query.eq('visibility', visibility);
-        }
+        // if (visibility !== 'all') {
+        //     query = query.eq('visibility', visibility);
+        // }
 
-        if (owner_id) {
-            query = query.eq('owner_id', owner_id);
-        }
+        // if (owner_id) {
+        //     query = query.eq('owner_id', owner_id);
+        // }
 
-        // Apply pagination
-        query = query
-            .order('created_at', { ascending: false })
-            .range(offset, offset + parseInt(limit) - 1);
+        // // Apply pagination
+        // query = query
+        //     .order('created_at', { ascending: false })
+        //     .range(offset, offset + parseInt(limit) - 1);
 
-        const { data: files, error, count } = await query;
+        // const { data: files, error, count } = await query;
 
-        if (error) {
-            throw new Error(error.message);
-        }
+        // if (error) {
+        //     if (error.message?.toLowerCase().includes('fetch failed')) {
+        //         console.error('File listing fetch failed, returning empty result set:', error);
+        //         return res.json({
+        //             success: true,
+        //             data: {
+        //                 files: [],
+        //                 pagination: {
+        //                     currentPage: parseInt(page),
+        //                     totalPages: 0,
+        //                     totalFiles: 0,
+        //                     hasMore: false
+        //                 }
+        //             }
+        //         });
+        //     }
+        //     throw new Error(error.message);
+        // }
 
         // Format response
-        const formattedFiles = files.map(file => ({
+        const formattedFiles = user_uploaded_files.map(file => ({
             id: file.id,
             title: file.title,
             description: file.description,
@@ -258,8 +284,9 @@ router.get('/', async (req, res) => {
             visibility: file.visibility,
             createdAt: file.created_at,
             ownerId: file.owner_id,
-            tags: file.upload_tags?.map(ut => ut.tags?.name).filter(Boolean) || []
         }));
+
+        const count = user_uploaded_files.length;
 
         res.json({
             success: true,

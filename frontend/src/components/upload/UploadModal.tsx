@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { CalendarDate } from "@internationalized/date";
 import {
   FolderIcon,
   LinkIcon,
@@ -11,21 +10,15 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import {
   Input,
-  Textarea,
+  TextArea,
   Select,
-  SelectItem,
   Button,
-  Chip,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Progress,
   Card,
-  CardBody,
+  Label,
+  ListBoxItem,
+  ListBox,
 } from "@heroui/react";
-import { DatePicker } from "@heroui/date-picker";
 
 interface UploadResult {
   id: string;
@@ -46,7 +39,6 @@ interface UploadFormData {
   description: string;
   visibility: "private" | "public" | "team";
   tags: string[];
-  scheduledDate: string;
 }
 
 interface LinkFormData {
@@ -55,7 +47,6 @@ interface LinkFormData {
   url: string;
   visibility: "private" | "public" | "team";
   tags: string[];
-  scheduledDate: string;
 }
 
 export default function UploadModal({
@@ -70,26 +61,19 @@ export default function UploadModal({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // DatePicker state for file
-  const [fileDateValue, setFileDateValue] = useState<CalendarDate | null>(null);
-
   const [fileFormData, setFileFormData] = useState<UploadFormData>({
     title: "",
     description: "",
     visibility: "private",
     tags: [],
-    scheduledDate: "",
   });
 
-  // DatePicker state for link
-  const [linkDateValue, setLinkDateValue] = useState<CalendarDate | null>(null);
   const [linkFormData, setLinkFormData] = useState<LinkFormData>({
     title: "",
     description: "",
     url: "",
     visibility: "private",
     tags: [],
-    scheduledDate: "",
   });
 
   const resetFileForm = () => {
@@ -99,9 +83,7 @@ export default function UploadModal({
       description: "",
       visibility: "private",
       tags: [],
-      scheduledDate: "",
-    }); // Reset the object to its initial empty state
-    setFileDateValue(null); // Reset the date to null
+    });
   };
 
   const resetLinkForm = () => {
@@ -111,9 +93,7 @@ export default function UploadModal({
       url: "",
       visibility: "private",
       tags: [],
-      scheduledDate: "",
-    }); // Reset the object to its initial empty state
-    setLinkDateValue(null); // Reset the date to null
+    });
   };
 
   const [tagInput, setTagInput] = useState("");
@@ -138,7 +118,7 @@ export default function UploadModal({
         setFileFormData((prev) => ({ ...prev, title: fileName }));
       }
     },
-    [fileFormData.title]
+    [fileFormData.title],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -158,7 +138,7 @@ export default function UploadModal({
       const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) handleFileSelect(files[0]);
     },
-    [handleFileSelect]
+    [handleFileSelect],
   );
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,9 +202,6 @@ export default function UploadModal({
         formDataToSend.append("description", fileFormData.description);
         formDataToSend.append("owner_id", user.id);
         formDataToSend.append("visibility", fileFormData.visibility);
-        if (fileFormData.scheduledDate) {
-          formDataToSend.append("scheduled_date", fileFormData.scheduledDate);
-        }
         formDataToSend.append("tags", JSON.stringify(fileFormData.tags));
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/upload/file`,
@@ -232,11 +209,11 @@ export default function UploadModal({
             method: "POST",
             headers: {
               Authorization: `Bearer ${localStorage.getItem(
-                "surfe_access_token"
+                "surfe_access_token",
               )}`,
             },
             body: formDataToSend,
-          }
+          },
         );
         const result = await response.json();
         if (result.success) {
@@ -270,7 +247,7 @@ export default function UploadModal({
             method: "POST",
             headers: {
               Authorization: `Bearer ${localStorage.getItem(
-                "surfe_access_token"
+                "surfe_access_token",
               )}`,
               "Content-Type": "application/json",
             },
@@ -278,7 +255,7 @@ export default function UploadModal({
               ...linkFormData,
               owner_id: user.id,
             }),
-          }
+          },
         );
         const result = await response.json();
         if (result.success) {
@@ -300,339 +277,391 @@ export default function UploadModal({
   return (
     <Modal
       isOpen={isOpen}
-      onOpenChange={(open) => !open && onClose()}
-      size="2xl"
-      scrollBehavior="inside"
-      placement="center"
-      backdrop="blur"
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <h2 className="text-xl font-semibold text-foreground">
-            Upload Section
-          </h2>
-          <p className="text-sm text-foreground-600">
-            Upload files or add links.
-          </p>
-        </ModalHeader>
-        <ModalBody className="gap-6">
-          <div className="flex gap-2">
-            <Button
-              onPress={() => setActiveTab("file")}
-              className={`startContent:flex items-center ${
-                activeTab === "file"
-                  ? "bg-foreground text-background"
-                  : "bg-transparent text-foreground border-2 border-default"
-              }`}
-              startContent={<FolderIcon className="h-4 w-4" />}
-            >
-              File Upload
-            </Button>
-            <Button
-              onPress={() => setActiveTab("link")}
-              className={`startContent:flex items-center ${
-                activeTab === "link"
-                  ? "bg-foreground text-background"
-                  : "bg-transparent text-foreground border-2 border-default"
-              }`}
-              startContent={<FolderIcon className="h-4 w-4" />}
-            >
-              Link Upload
-            </Button>
-          </div>
+      <Modal.Backdrop variant="blur">
+        <Modal.Container placement="center" size="full" scroll="inside">
+          <Modal.Dialog aria-label="Upload documents">
+            <div className="flex flex-col gap-6 p-6 max-h-[90vh] overflow-y-auto">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-semibold text-foreground">
+                  Upload Section
+                </h2>
+                <p className="text-sm text-foreground-600">
+                  Upload files or add links.
+                </p>
+              </div>
 
-          {activeTab === "file" && (
-            <div className="space-y-6">
-              <Card
-                className={`border-2 border-dashed transition-colors cursor-pointer w-full ${
-                  isDragging
-                    ? "border-primary bg-primary-50"
-                    : "border-default-300 hover:border-default-400"
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                isPressable
-                onPress={() => fileInputRef.current?.click()}
-              >
-                <CardBody className="p-8 text-center">
-                  {selectedFile ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center">
-                        <Card className="w-16 h-16 bg-default-100">
-                          <CardBody className="flex items-center justify-center p-0">
-                            {selectedFile.type.startsWith("image/") ? (
-                              <PhotoIcon className="h-8 w-8 text-default-600" />
-                            ) : (
-                              <VideoCameraIcon className="h-8 w-8 text-default-600" />
-                            )}
-                          </CardBody>
-                        </Card>
-                      </div>
-                      <p className="text-sm font-medium text-foreground">
-                        {selectedFile.name}
-                      </p>
-                      <p className="text-xs text-foreground-500">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                      <Button
-                        color="danger"
-                        variant="light"
-                        size="sm"
-                        onPress={() => {
-                          setSelectedFile(null);
-                          resetFileForm();
+              <div className="flex gap-2">
+                <Button
+                  onPress={() => setActiveTab("file")}
+                  className={
+                    activeTab === "file"
+                      ? "bg-foreground text-background"
+                      : "border-2 border-default bg-transparent text-foreground hover:bg-default"
+                  }
+                  size="sm"
+                >
+                  <FolderIcon className="h-4 w-4" />
+                  File Upload
+                </Button>
+                <Button
+                  onPress={() => setActiveTab("link")}
+                  className={
+                    activeTab === "link"
+                      ? "bg-foreground text-background"
+                      : "border-2 border-default bg-transparent text-foreground hover:bg-default"
+                  }
+                  size="sm"
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Link Upload
+                </Button>
+              </div>
+
+              {activeTab === "file" && (
+                <div className="space-y-6">
+                  <Card className="border-2 border-dashed border-default-300 cursor-pointer hover:border-default-400 transition-colors">
+                    <div
+                      className={`p-8 text-center transition-colors ${
+                        isDragging
+                          ? "border-primary bg-primary-50 border-2 border-dashed border-primary"
+                          : ""
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {selectedFile ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-center">
+                            <div className="w-16 h-16 bg-default-100 rounded-lg flex items-center justify-center">
+                              {selectedFile.type.startsWith("image/") ? (
+                                <PhotoIcon className="h-8 w-8 text-default-600" />
+                              ) : (
+                                <VideoCameraIcon className="h-8 w-8 text-default-600" />
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm font-medium text-foreground">
+                            {selectedFile.name}
+                          </p>
+                          <p className="text-xs text-foreground-500">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onPress={() => {
+                              setSelectedFile(null);
+                              resetFileForm();
+                            }}
+                          >
+                            Remove file
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <FolderIcon className="h-12 w-12 text-default-400 mx-auto" />
+                          <p className="text-sm font-medium text-foreground">
+                            Upload a file
+                          </p>
+                          <p className="text-xs text-foreground-500">
+                            Click here or drag and drop files
+                          </p>
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*,.pdf,.docx,.pptx"
+                        onChange={handleFileInputChange}
+                        className="hidden"
+                      />
+                    </div>
+                  </Card>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="file-title">File name</Label>
+                      <Input
+                        id="file-title"
+                        placeholder="Enter file name"
+                        value={fileFormData.title}
+                        onChange={(e) =>
+                          setFileFormData((p) => ({
+                            ...p,
+                            title: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="file-visibility">Visibility</Label>
+                      <Select
+                        id="file-visibility"
+                        // selectedKey={fileFormData.visibility}
+                        onChange={(e) => {
+                          if (e && e !== null) {
+                            setFileFormData((p) => ({
+                              ...p,
+                              visibility: e as unknown as string as
+                                | "private"
+                                | "public"
+                                | "team",
+                            }));
+                          }
                         }}
                       >
-                        Remove file
+                        <Select.Trigger />
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBoxItem
+                              key="private"
+                              id="private"
+                              textValue="Private"
+                            >
+                              Private
+                            </ListBoxItem>
+                            <ListBoxItem key="team" id="team" textValue="Team">
+                              Team
+                            </ListBoxItem>
+                            <ListBoxItem
+                              key="public"
+                              id="public"
+                              textValue="Public"
+                            >
+                              Public
+                            </ListBoxItem>
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="file-description">Description</Label>
+                    <TextArea
+                      id="file-description"
+                      placeholder="Describe your file details..."
+                      value={fileFormData.description}
+                      onChange={(e) =>
+                        setFileFormData((p) => ({
+                          ...p,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Add tags</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type to add..."
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleTagAdd("file")
+                        }
+                        className="flex-1"
+                      />
+                      <Button
+                        onPress={() => handleTagAdd("file")}
+                        variant="tertiary"
+                        size="md"
+                      >
+                        Add
                       </Button>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <FolderIcon className="h-12 w-12 text-default-400 mx-auto" />
-                      <p className="text-sm font-medium text-foreground">
-                        Upload a file
-                      </p>
-                      <p className="text-xs text-foreground-500">
-                        Click here or drag and drop files
-                      </p>
+                    <div className="flex flex-wrap gap-2">
+                      {fileFormData.tags.map((tag, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-1 bg-default-100 rounded-full px-3 py-1 text-sm"
+                        >
+                          <span>{tag}</span>
+                          <button
+                            onClick={() => handleTagRemove(tag, "file")}
+                            className="ml-1 hover:text-danger"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,video/*,.pdf,.docx,.pptx"
-                    onChange={handleFileInputChange}
-                    className="hidden"
-                  />
-                </CardBody>
-              </Card>
+                  </div>
+                </div>
+              )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="File name"
-                  placeholder="Enter file name"
-                  value={fileFormData.title}
-                  onValueChange={(v) =>
-                    setFileFormData((p) => ({ ...p, title: v }))
-                  }
-                  isRequired
-                  variant="bordered"
-                />
-                <Select
-                  label="Visibility"
-                  selectedKeys={new Set([fileFormData.visibility])}
-                  onSelectionChange={(keys) =>
-                    setFileFormData((p) => ({
-                      ...p,
-                      visibility: Array.from(keys)[0] as
-                        | "private"
-                        | "public"
-                        | "team",
-                    }))
-                  }
-                  variant="bordered"
+              {activeTab === "link" && (
+                <div className="space-y-6">
+                  <Card className="border-2 border-dashed border-default-300">
+                    <div className="p-8 text-center space-y-4">
+                      <LinkIcon className="h-12 w-12 text-default-400 mx-auto" />
+                      <div className="flex flex-col gap-1 w-full">
+                        <Input
+                          type="url"
+                          placeholder="https://example.com"
+                          value={linkFormData.url}
+                          onChange={(e) =>
+                            setLinkFormData((p) => ({
+                              ...p,
+                              url: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </Card>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="link-title">Title</Label>
+                      <Input
+                        id="link-title"
+                        placeholder="Enter title"
+                        value={linkFormData.title}
+                        onChange={(e) =>
+                          setLinkFormData((p) => ({
+                            ...p,
+                            title: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="link-visibility">Visibility</Label>
+                      <Select
+                        id="link-visibility"
+                        selectedKey={linkFormData.visibility}
+                        onChange={(e) => {
+                          if (e && e !== null) {
+                            setLinkFormData((p) => ({
+                              ...p,
+                              visibility: e as unknown as string as
+                                | "private"
+                                | "public"
+                                | "team",
+                            }));
+                          }
+                        }}
+                      >
+                        <Select.Trigger />
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBoxItem
+                              key="private"
+                              id="private"
+                              textValue="Private"
+                            >
+                              Private
+                            </ListBoxItem>
+                            <ListBoxItem key="team" id="team" textValue="Team">
+                              Team
+                            </ListBoxItem>
+                            <ListBoxItem
+                              key="public"
+                              id="public"
+                              textValue="Public"
+                            >
+                              Public
+                            </ListBoxItem>
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="link-description">Description</Label>
+                    <TextArea
+                      id="link-description"
+                      placeholder="Describe the link..."
+                      value={linkFormData.description}
+                      onChange={(e) =>
+                        setLinkFormData((p) => ({
+                          ...p,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Add tags</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type to search..."
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleTagAdd("link")
+                        }
+                        className="flex-1"
+                      />
+                      <Button
+                        onPress={() => handleTagAdd("link")}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {linkFormData.tags.map((tag, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-1 bg-default-100 rounded-full px-3 py-1 text-sm"
+                        >
+                          <span>{tag}</span>
+                          <button
+                            onClick={() => handleTagRemove(tag, "link")}
+                            className="ml-1 hover:text-danger"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-foreground-600">
+                    <span>Uploading...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-default-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-foreground transition-all"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-divider">
+                <Button onPress={onClose} variant="outline">
+                  Cancel
+                </Button>
+                <Button
+                  onPress={handleSubmit}
+                  // disabled={isUploading}
+                  className="bg-foreground text-background"
                 >
-                  <SelectItem key="private">Private</SelectItem>
-                  <SelectItem key="team">Team</SelectItem>
-                  <SelectItem key="public">Public</SelectItem>
-                </Select>
-              </div>
-
-              <Textarea
-                label="Description"
-                placeholder="Describe your file details..."
-                value={fileFormData.description}
-                onValueChange={(v) =>
-                  setFileFormData((p) => ({ ...p, description: v }))
-                }
-                variant="bordered"
-              />
-
-              <DatePicker
-                label="Upload Date"
-                value={fileDateValue ?? undefined}
-                onChange={(date) => {
-                  setFileDateValue(date);
-                  const iso = `${date?.year}-${String(date?.month).padStart(
-                    2,
-                    "0"
-                  )}-${String(date?.day).padStart(2, "0")}`;
-                  setFileFormData((p) => ({ ...p, scheduledDate: iso }));
-                }}
-                variant="bordered"
-              />
-
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">
-                  Add tags
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Type to search..."
-                    value={tagInput}
-                    onValueChange={setTagInput}
-                    onKeyDown={(e) => e.key === "Enter" && handleTagAdd("file")}
-                    className="flex-1"
-                    variant="bordered"
-                  />
-                  <Button
-                    onPress={() => handleTagAdd("file")}
-                    variant="bordered"
-                  >
-                    Add
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {fileFormData.tags.map((tag, i) => (
-                    <Chip
-                      key={i}
-                      variant="flat"
-                      size="sm"
-                      onClose={() => handleTagRemove(tag, "file")}
-                    >
-                      {tag}
-                    </Chip>
-                  ))}
-                </div>
+                  {isUploading ? `Uploading... ${uploadProgress}%` : "Upload"}
+                </Button>
               </div>
             </div>
-          )}
-
-          {activeTab === "link" && (
-            <div className="space-y-6">
-              <Card className="border-2 border-dashed border-default-300">
-                <CardBody className="p-8 text-center space-y-4">
-                  <LinkIcon className="h-12 w-12 text-default-400 mx-auto" />
-                  <Input
-                    type="url"
-                    placeholder="https://example.com"
-                    value={linkFormData.url}
-                    onValueChange={(v) =>
-                      setLinkFormData((p) => ({ ...p, url: v }))
-                    }
-                    isRequired
-                    variant="bordered"
-                    size="lg"
-                  />
-                </CardBody>
-              </Card>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Title"
-                  placeholder="Enter title"
-                  value={linkFormData.title}
-                  onValueChange={(v) =>
-                    setLinkFormData((p) => ({ ...p, title: v }))
-                  }
-                  isRequired
-                  variant="bordered"
-                />
-                <Select
-                  label="Visibility"
-                  selectedKeys={new Set([linkFormData.visibility])}
-                  onSelectionChange={(keys) =>
-                    setLinkFormData((p) => ({
-                      ...p,
-                      visibility: Array.from(keys)[0] as
-                        | "private"
-                        | "public"
-                        | "team",
-                    }))
-                  }
-                  variant="bordered"
-                >
-                  <SelectItem key="private">Private</SelectItem>
-                  <SelectItem key="team">Team</SelectItem>
-                  <SelectItem key="public">Public</SelectItem>
-                </Select>
-              </div>
-
-              <Textarea
-                label="Description"
-                placeholder="Describe the link..."
-                value={linkFormData.description}
-                onValueChange={(v) =>
-                  setLinkFormData((p) => ({ ...p, description: v }))
-                }
-                variant="bordered"
-              />
-
-              <DatePicker
-                label="Upload Date"
-                value={linkDateValue ?? undefined}
-                onChange={(date) => {
-                  setLinkDateValue(date);
-                  const iso = `${date?.year}-${String(date?.month).padStart(
-                    2,
-                    "0"
-                  )}-${String(date?.day).padStart(2, "0")}`;
-                  setLinkFormData((p) => ({ ...p, scheduledDate: iso }));
-                }}
-                variant="bordered"
-              />
-
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">
-                  Add tags
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Type to search..."
-                    value={tagInput}
-                    onValueChange={setTagInput}
-                    onKeyDown={(e) => e.key === "Enter" && handleTagAdd("link")}
-                    className="flex-1"
-                    variant="bordered"
-                  />
-                  <Button
-                    onPress={() => handleTagAdd("link")}
-                    variant="bordered"
-                  >
-                    Add
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {linkFormData.tags.map((tag, i) => (
-                    <Chip
-                      key={i}
-                      variant="flat"
-                      size="sm"
-                      onClose={() => handleTagRemove(tag, "link")}
-                    >
-                      {tag}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isUploading && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-foreground-600">
-                <span>Uploading...</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <Progress value={uploadProgress} color="default" />
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="light" color="danger" onPress={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onPress={handleSubmit}
-            isLoading={isUploading}
-            color="default"
-            className="bg-foreground text-background"
-          >
-            Upload
-          </Button>
-        </ModalFooter>
-      </ModalContent>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

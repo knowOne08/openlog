@@ -114,3 +114,5 @@ dist/
 *.zip
 
 .venv
+
+database-backup

@@ -1,5 +1,6 @@
 // config/db.js
 import { createClient } from "@supabase/supabase-js";
+import 'dotenv/config';
 
 // Validate required environment variables
 const requiredEnvVars = [

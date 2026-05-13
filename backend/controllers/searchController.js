@@ -1,5 +1,6 @@
-import { supabaseClient } from '../config/db.js';
-import { searchQdrant } from '../utils/qdrant-skeleton.js';
+// import { supabaseClient } from '../config/db.js';
+import { connection } from '../config/sql.js';
+import { searchQdrant } from '../utils/qdrant-new.js';
 import { index as meiliIndex } from '../utils/meili.js';
 import fetch from 'node-fetch';
 
@@ -12,7 +13,7 @@ import fetch from 'node-fetch';
 async function generateEmbedding(text) {
     const HF_API_URL = 'https://router.huggingface.co/hf-inference/models/mixedbread-ai/mxbai-embed-large-v1';
     const HF_API_TOKEN = process.env.HF_API_TOKEN;
-    
+
     if (!HF_API_TOKEN) {
         throw new Error('HF_API_TOKEN environment variable is required for embedding generation');
     }
@@ -20,7 +21,7 @@ async function generateEmbedding(text) {
     try {
         // Add retrieval prompt for better search performance
         const promptedText = `Represent this sentence for searching relevant passages: ${text}`;
-        
+
         const response = await fetch(HF_API_URL, {
             method: 'POST',
             headers: {
@@ -41,10 +42,10 @@ async function generateEmbedding(text) {
         }
 
         const embedding = await response.json();
-        
+
         // HF Inference API returns a single array for single input, or array of arrays for multiple inputs
         let embeddingVector;
-        
+
         if (Array.isArray(embedding)) {
             // If it's an array of arrays (multiple inputs), take the first one
             if (Array.isArray(embedding[0])) {
@@ -56,7 +57,7 @@ async function generateEmbedding(text) {
         } else {
             throw new Error('Invalid embedding format returned from Hugging Face API');
         }
-        
+
         // Validate embedding dimensions (mxbai-embed-large-v1 produces 1024-dim embeddings)
         if (!Array.isArray(embeddingVector) || embeddingVector.length !== 1024) {
             throw new Error(`Expected 1024-dimensional embedding array, got ${Array.isArray(embeddingVector) ? embeddingVector.length : 'non-array'} dimensions`);
@@ -80,19 +81,39 @@ async function generateEmbedding(text) {
 async function searchController(query, type, limit = 10, offset = 0) {
     try {
         // Helper to get tags map
-        async function getTagMap() {
-            const { data: tags } = await supabaseClient
-                .from('upload_tags')
-                .select(`upload_id, tags:tags(name)`);
+        // async function getTagMap() {
+        //     const { data: tags } = await supabaseClient
+        //         .from('upload_tags')
+        //         .select(`upload_id, tags:tags(name)`);
+        //     const tagMap = new Map();
+        //     tags?.forEach(({ upload_id, tags }) => {
+        //         if (tags?.name) {
+        //             const existingTags = tagMap.get(upload_id) || [];
+        //             tagMap.set(upload_id, [...existingTags, tags.name]);
+        //         }
+        //     });
+        //     return tagMap;
+        // }
+
+        async function getTagMap(connection) {
+            if (!connection) throw new Error("Database connection is missing!");
+
+            const [rows] = await connection.execute(`
+                SELECT upload_id, GROUP_CONCAT(name) as tagNames
+                FROM upload_tags
+                JOIN tags ON upload_tags.tag_id = tags.id
+                GROUP BY upload_id
+            `);
+
             const tagMap = new Map();
-            tags?.forEach(({ upload_id, tags }) => {
-                if (tags?.name) {
-                    const existingTags = tagMap.get(upload_id) || [];
-                    tagMap.set(upload_id, [...existingTags, tags.name]);
-                }
+            rows.forEach(row => {
+                // Convert the comma-separated string back into an array
+                tagMap.set(row.upload_id, row.tagNames.split(','));
             });
+
             return tagMap;
         }
+
 
         if (type === 'semantic') {
             // Fetch both semantic and traditional results, merge, dedupe, sort
@@ -100,7 +121,7 @@ async function searchController(query, type, limit = 10, offset = 0) {
             // Use a higher threshold for semantic similarity (e.g., 0.5)
             const [semanticResultsRaw, tagMap] = await Promise.all([
                 searchQdrant(queryVector, limit * 2, 0.5),
-                getTagMap()
+                getTagMap(connection)
             ]);
 
             // Filter out low-score semantic results and normalize scores (0-1)
@@ -111,13 +132,16 @@ async function searchController(query, type, limit = 10, offset = 0) {
                     score: Math.max(0, Math.min(1, r.score)) // Clamp to [0,1]
                 }));
 
+            const limitValue = limit.toString(); //converting the limit to string because executre requires string
             // Fetch traditional results (no pagination, just enough to merge)
-            const { data: traditionalResults } = await supabaseClient
-                .from('uploads')
-                .select('id, title, description, file_type, file_path, external_url, created_at')
-                .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
-                .order('created_at', { ascending: false })
-                .limit(limit);
+            const [traditionalResults] = await connection.execute(
+                `SELECT id, title, description, file_type, file_path, external_url, created_at 
+                FROM uploads 
+                WHERE title LIKE ? OR description LIKE ? OR extracted_text LIKE ?
+                ORDER BY created_at DESC 
+                LIMIT ?`,
+                [`%${query}%`, `%${query}%`, `%${query}%`, limitValue]
+            );
 
             // Map traditional results to same format as semantic
             const mappedTraditional = (traditionalResults || []).map(doc => ({
@@ -140,6 +164,8 @@ async function searchController(query, type, limit = 10, offset = 0) {
             }));
 
             // Merge, dedupe by id, sort by score desc
+            console.log("traditional", mappedTraditional);
+            console.log("semantic", semanticResults);
             const allResults = [...semanticResults, ...mappedTraditional];
             const uniqueResults = Array.from(new Map(
                 allResults.map(item => [item.id, item])

@@ -2,12 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, CardHeader, Input, Button } from "@heroui/react";
-import {
-  CheckIcon,
-  EyeFilledIcon,
-  EyeSlashFilledIcon,
-} from "@heroui/shared-icons";
+import { Card, Input, Button, Label } from "@heroui/react";
+import { CheckIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -70,14 +66,14 @@ export default function ChangePasswordPage() {
             currentPassword,
             newPassword,
           }),
-        }
+        },
       );
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
         setError(
-          data.error?.message || data.message || "Failed to change password"
+          data.error?.message || data.message || "Failed to change password",
         );
         setIsLoading(false);
         return;
@@ -94,7 +90,7 @@ export default function ChangePasswordPage() {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to change password. Please try again."
+          : "Failed to change password. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -105,7 +101,7 @@ export default function ChangePasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
-          <CardBody className="text-center space-y-6 p-8">
+          <div className="text-center space-y-6 p-8">
             <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-success-100">
               <CheckIcon className="h-10 w-10 text-success-600" />
             </div>
@@ -117,7 +113,7 @@ export default function ChangePasswordPage() {
                 Your password has been updated. Redirecting to dashboard...
               </p>
             </div>
-          </CardBody>
+          </div>
         </Card>
       </div>
     );
@@ -127,7 +123,7 @@ export default function ChangePasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="max-w-md w-full">
         <Card className="shadow-none">
-          <CardHeader className="flex flex-col items-center pb-0 pt-8">
+          <div className="flex flex-col items-center pb-0 pt-8 px-6">
             <div className="text-4xl font-bold text-default-800 mb-4">*</div>
             <h2 className="text-2xl font-bold text-default-800 text-center">
               Change Password
@@ -135,9 +131,9 @@ export default function ChangePasswordPage() {
             <p className="text-sm text-default-600 text-center mt-2">
               Update your password to keep your account secure
             </p>
-          </CardHeader>
+          </div>
 
-          <CardBody className="pt-6">
+          <div className="pt-6 px-6 pb-6">
             <form className="space-y-6" onSubmit={handleSubmit}>
               {error && (
                 <div className="bg-danger-50 border border-danger-200 text-danger-800 px-4 py-3 rounded-md text-sm">
@@ -145,114 +141,105 @@ export default function ChangePasswordPage() {
                 </div>
               )}
 
-              <Input
-                type={isCurrentPasswordVisible ? "text" : "password"}
-                label="Current Password"
-                variant="bordered"
-                value={currentPassword}
-                onValueChange={setCurrentPassword}
-                isRequired
-                suppressHydrationWarning
-                endContent={
-                  <button
-                    className="focus:outline-none"
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="current-password">Current Password</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="current-password"
+                    type={isCurrentPasswordVisible ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    suppressHydrationWarning
+                    className="flex-1"
+                  />
+                  <Button
+                    isIconOnly
+                    variant="ghost"
                     type="button"
-                    onClick={() =>
+                    onPress={() =>
                       setIsCurrentPasswordVisible(!isCurrentPasswordVisible)
                     }
                     aria-label="toggle current password visibility"
-                    suppressHydrationWarning
                   >
                     {isCurrentPasswordVisible ? (
-                      <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                      <EyeSlashIcon className="h-5 w-5" />
                     ) : (
-                      <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                      <EyeIcon className="h-5 w-5" />
                     )}
-                  </button>
-                }
-                classNames={{
-                  input: "text-sm",
-                  label: "text-sm font-medium",
-                }}
-              />
+                  </Button>
+                </div>
+              </div>
 
-              <Input
-                type={isNewPasswordVisible ? "text" : "password"}
-                label="New Password"
-                variant="bordered"
-                value={newPassword}
-                onValueChange={setNewPassword}
-                isRequired
-                suppressHydrationWarning
-                endContent={
-                  <button
-                    className="focus:outline-none"
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="new-password">New Password</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="new-password"
+                    type={isNewPasswordVisible ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    suppressHydrationWarning
+                    className="flex-1"
+                  />
+                  <Button
+                    isIconOnly
+                    variant="ghost"
                     type="button"
-                    onClick={() =>
+                    onPress={() =>
                       setIsNewPasswordVisible(!isNewPasswordVisible)
                     }
                     aria-label="toggle new password visibility"
-                    suppressHydrationWarning
                   >
                     {isNewPasswordVisible ? (
-                      <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                      <EyeSlashIcon className="h-5 w-5" />
                     ) : (
-                      <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                      <EyeIcon className="h-5 w-5" />
                     )}
-                  </button>
-                }
-                classNames={{
-                  input: "text-sm",
-                  label: "text-sm font-medium",
-                }}
-              />
+                  </Button>
+                </div>
+              </div>
 
-              <Input
-                type={isConfirmPasswordVisible ? "text" : "password"}
-                label="Confirm New Password"
-                variant="bordered"
-                value={confirmPassword}
-                onValueChange={setConfirmPassword}
-                isRequired
-                suppressHydrationWarning
-                endContent={
-                  <button
-                    className="focus:outline-none"
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="confirm-password"
+                    type={isConfirmPasswordVisible ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    suppressHydrationWarning
+                    className="flex-1"
+                  />
+                  <Button
+                    isIconOnly
+                    variant="ghost"
                     type="button"
-                    onClick={() =>
+                    onPress={() =>
                       setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
                     }
                     aria-label="toggle confirm password visibility"
-                    suppressHydrationWarning
                   >
                     {isConfirmPasswordVisible ? (
-                      <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                      <EyeSlashIcon className="h-5 w-5" />
                     ) : (
-                      <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                      <EyeIcon className="h-5 w-5" />
                     )}
-                  </button>
-                }
-                classNames={{
-                  input: "text-sm",
-                  label: "text-sm font-medium",
-                }}
-              />
+                  </Button>
+                </div>
+              </div>
 
               <div className="space-y-3">
                 <Button
                   type="submit"
-                  color="default"
-                  size="lg"
                   className="w-full bg-default-900 text-white font-medium"
-                  isLoading={isLoading}
+                  isDisabled={isLoading}
                 >
                   {isLoading ? "Changing Password..." : "Change Password"}
                 </Button>
 
                 <Button
                   type="button"
-                  variant="light"
-                  size="lg"
+                  variant="outline"
                   className="w-full"
                   onPress={() => router.push("/dashboard")}
                   isDisabled={isLoading}
@@ -261,7 +248,7 @@ export default function ChangePasswordPage() {
                 </Button>
               </div>
             </form>
-          </CardBody>
+          </div>
         </Card>
       </div>
     </div>

@@ -13,16 +13,16 @@ async function initializeMeiliSearchIndex() {
         // Ensure the index exists with correct primary key
         await client.createIndex('uploads', { primaryKey: 'id' });
         console.log('✅ MeiliSearch uploads index created/verified');
-        
+
         // Configure searchable attributes for better search
         await index.updateSearchableAttributes([
             'title',
-            'description', 
+            'description',
             'tags',
             'file_type',
             'mime_type'
         ]);
-        
+
         // Configure filterable attributes
         await index.updateFilterableAttributes([
             'owner_id',
@@ -31,9 +31,9 @@ async function initializeMeiliSearchIndex() {
             'mime_type',
             'created_at'
         ]);
-        
+
         console.log('✅ MeiliSearch index settings configured');
-        
+
     } catch (error) {
         // Index might already exist, which is fine
         if (error.code !== 'index_already_exists') {
