@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { getFileUrl, deleteFile } from '../utils/minio.js';
-// import { supabaseClient } from '../config/db.js';
-import { connection } from '../config/sql.js'
+import {
+    deleteUpload,
+    getUploadById,
+    getUploadStats,
+    listUploads,
+} from '../utils/mysqlDb.js';
 import { deleteEmbedding } from '../utils/qdrant.js';
 import { deleteTags } from '../controllers/filesController.js';
 
@@ -11,16 +15,11 @@ const router = Router();
 router.get('/:fileId/download-url', async (req, res) => {
     try {
         const { fileId } = req.params;
-        const { expiry = 3600 } = req.query; // Default 1 hour
+        const expirySeconds = Number.parseInt(req.query.expiry || '3600', 10);
 
-        // Get file info from database
-        const { data: fileRecord, error } = await supabaseClient
-            .from('uploads')
-            .select('file_path, title, mime_type, file_type')
-            .eq('id', fileId)
-            .single();
+        const fileRecord = await getUploadById(fileId);
 
-        if (error || !fileRecord) {
+        if (!fileRecord) {
             return res.status(404).json({
                 success: false,
                 error: 'File not found'
@@ -35,8 +34,15 @@ router.get('/:fileId/download-url', async (req, res) => {
             });
         }
 
+        if (!fileRecord.file_path) {
+            return res.status(400).json({
+                success: false,
+                error: 'File path is missing'
+            });
+        }
+
         // Generate presigned URL
-        const downloadUrl = await getFileUrl(fileRecord.file_path, parseInt(expiry));
+        const downloadUrl = await getFileUrl(fileRecord.file_path, Number.isFinite(expirySeconds) ? expirySeconds : 3600);
 
         res.json({
             success: true,
@@ -44,7 +50,7 @@ router.get('/:fileId/download-url', async (req, res) => {
                 fileId,
                 fileName: fileRecord.title,
                 downloadUrl,
-                expiresIn: parseInt(expiry),
+                expiresIn: Number.isFinite(expirySeconds) ? expirySeconds : 3600,
                 mimeType: fileRecord.mime_type
             }
         });
@@ -63,36 +69,14 @@ router.get('/:fileId/metadata', async (req, res) => {
     try {
         const { fileId } = req.params;
 
-        // Get file metadata from database with tags
-        const { data: fileRecord, error } = await supabaseClient
-            .from('uploads')
-            .select(`
-                id,
-                title,
-                description,
-                file_type,
-                file_path,
-                external_url,
-                file_size,
-                mime_type,
-                visibility,
-                created_at,
-                upload_tags!inner(
-                    tags(name)
-                )
-            `)
-            .eq('id', fileId)
-            .single();
+        const fileRecord = await getUploadById(fileId);
 
-        if (error || !fileRecord) {
+        if (!fileRecord) {
             return res.status(404).json({
                 success: false,
                 error: 'File not found'
             });
         }
-
-        // Format tags
-        const tags = fileRecord.upload_tags?.map(ut => ut.tags.name) || [];
 
         const metadata = {
             id: fileRecord.id,
@@ -103,7 +87,7 @@ router.get('/:fileId/metadata', async (req, res) => {
             mimeType: fileRecord.mime_type,
             visibility: fileRecord.visibility,
             createdAt: fileRecord.created_at,
-            tags,
+            tags: fileRecord.tags || [],
             ...(fileRecord.file_type === 'link'
                 ? { url: fileRecord.external_url }
                 : { fileName: fileRecord.file_path }
@@ -124,19 +108,34 @@ router.get('/:fileId/metadata', async (req, res) => {
     }
 });
 
+// GET /api/files/stats - Get file statistics
+router.get('/stats', async (req, res) => {
+    try {
+        const { owner_id } = req.query;
+        const stats = await getUploadStats(owner_id);
+
+        res.json({
+            success: true,
+            data: stats
+        });
+
+    } catch (error) {
+        console.error('Stats retrieval error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve statistics'
+        });
+    }
+});
+
 // DELETE /api/files/:fileId - Delete file
 router.delete('/:fileId', async (req, res) => {
     try {
         const { fileId } = req.params;
 
-        // Get file info from database
-        const { data: fileRecord, error } = await supabaseClient
-            .from('uploads')
-            .select('file_path, file_type, title')
-            .eq('id', fileId)
-            .single();
+        const fileRecord = await getUploadById(fileId);
 
-        if (error || !fileRecord) {
+        if (!fileRecord) {
             return res.status(404).json({
                 success: false,
                 error: 'File not found'
@@ -170,13 +169,10 @@ router.delete('/:fileId', async (req, res) => {
         }
 
         // Delete from database
-        const { error: dbError } = await supabaseClient
-            .from('uploads')
-            .delete()
-            .eq('id', fileId);
+        const deleted = await deleteUpload(fileId);
 
-        if (dbError) {
-            throw new Error(`Database deletion failed: ${dbError.message}`);
+        if (!deleted) {
+            throw new Error('Database deletion failed');
         }
 
         res.json({
@@ -204,100 +200,20 @@ router.get('/', async (req, res) => {
             owner_id,
             tag
         } = req.query;
-
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-
-        // let query = supabaseClient
-        //     .from('uploads')
-        //     .select(`
-        //         id,
-        //         title,
-        //         description,
-        //         file_type,
-        //         file_size,
-        //         mime_type,
-        //         visibility,
-        //         created_at,
-        //         owner_id,
-        //         upload_tags(
-        //             tags(name)
-        //         )
-        //     `, { count: 'exact' });
-
-        const [user_uploaded_files] = await connection.execute(`
-            SELECT id, title, description, file_type, file_size, mime_type, visibility, created_at,owner_id
-            FROM uploads 
-            WHERE owner_id = ?
-            LIMIT ?
-            OFFSET ?
-            `, [owner_id, String(limit), String(offset)]);
-        console.log(user_uploaded_files, user_uploaded_files.length);
-
-
-        // Apply filters
-        // if (type !== 'all') {
-        //     query = query.eq('file_type', type);
-        // }
-
-        // if (visibility !== 'all') {
-        //     query = query.eq('visibility', visibility);
-        // }
-
-        // if (owner_id) {
-        //     query = query.eq('owner_id', owner_id);
-        // }
-
-        // // Apply pagination
-        // query = query
-        //     .order('created_at', { ascending: false })
-        //     .range(offset, offset + parseInt(limit) - 1);
-
-        // const { data: files, error, count } = await query;
-
-        // if (error) {
-        //     if (error.message?.toLowerCase().includes('fetch failed')) {
-        //         console.error('File listing fetch failed, returning empty result set:', error);
-        //         return res.json({
-        //             success: true,
-        //             data: {
-        //                 files: [],
-        //                 pagination: {
-        //                     currentPage: parseInt(page),
-        //                     totalPages: 0,
-        //                     totalFiles: 0,
-        //                     hasMore: false
-        //                 }
-        //             }
-        //         });
-        //     }
-        //     throw new Error(error.message);
-        // }
-
-        // Format response
-        const formattedFiles = user_uploaded_files.map(file => ({
-            id: file.id,
-            title: file.title,
-            description: file.description,
-            fileType: file.file_type,
-            size: file.file_size,
-            mimeType: file.mime_type,
-            visibility: file.visibility,
-            createdAt: file.created_at,
-            ownerId: file.owner_id,
-        }));
-
-        const count = user_uploaded_files.length;
+        const uploadList = await listUploads({
+            page,
+            limit,
+            type,
+            visibility,
+            ownerId: owner_id,
+            tag,
+        });
 
         res.json({
             success: true,
             data: {
-                files: formattedFiles,
-                pagination: {
-                    currentPage: parseInt(page),
-                    totalPages: Math.ceil(count / parseInt(limit)),
-                    totalFiles: count,
-                    hasMore: offset + parseInt(limit) < count
-                }
+                files: uploadList.files,
+                pagination: uploadList.pagination,
             }
         });
 
@@ -306,52 +222,6 @@ router.get('/', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to retrieve files'
-        });
-    }
-});
-
-// GET /api/files/stats - Get file statistics
-router.get('/stats', async (req, res) => {
-    try {
-        const { owner_id } = req.query;
-
-        let query = supabaseClient
-            .from('uploads')
-            .select('file_type, file_size, visibility');
-
-        if (owner_id) {
-            query = query.eq('owner_id', owner_id);
-        }
-
-        const { data: files, error } = await query;
-
-        if (error) {
-            throw new Error(error.message);
-        }
-
-        const stats = {
-            totalFiles: files.length,
-            totalSize: files.reduce((sum, file) => sum + (file.file_size || 0), 0),
-            fileTypes: {
-                local_file: files.filter(f => f.file_type === 'local_file').length,
-                link: files.filter(f => f.file_type === 'link').length
-            },
-            visibility: {
-                public: files.filter(f => f.visibility === 'public').length,
-                private: files.filter(f => f.visibility === 'private').length
-            }
-        };
-
-        res.json({
-            success: true,
-            data: stats
-        });
-
-    } catch (error) {
-        console.error('Stats retrieval error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to retrieve statistics'
         });
     }
 });

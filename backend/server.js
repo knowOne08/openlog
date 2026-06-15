@@ -5,7 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-import { testConnection } from './config/db.js';
+// import { testConnection } from './config/db.js';
 
 // Centralized logging configuration based on NODE_ENV
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -52,8 +52,6 @@ const app = express();
 
 // Environment validation
 const requiredEnvVars = [
-    'SUPABASE_URL',
-    'SUPABASE_SERVICE_KEY',
     'JWT_SECRET',
     'PORT'
 ];
@@ -196,13 +194,13 @@ const PORT = process.env.PORT || 4000;
 const startServer = async () => {
     try {
         // Test database connection
-        console.log('🔍 Testing database connection...');
-        const dbConnected = await testConnection();
+        // console.log('🔍 Testing database connection...');
+        // const dbConnected = await testConnection();
 
-        if (!dbConnected) {
-            console.error('❌ Database connection failed. Please check your Supabase configuration.');
-            process.exit(1);
-        }
+        // if (!dbConnected) {
+        //     console.error('❌ Database connection failed. Please check your Supabase configuration.');
+        //     process.exit(1);
+        // }
 
         // Start the server
         const server = app.listen(PORT, () => {
