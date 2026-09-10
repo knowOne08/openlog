@@ -21,7 +21,8 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.7",
     "nodemon": "^3.1.10",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "xlsx": "^0.18.5"
   },
   "name": "backend",
   "version": "1.0.0",
@@ -42,6 +43,7 @@
     "services:logs": "docker-compose logs -f",
     "services:restart": "npm run services:stop && npm run services:start",
     "health": "node health-check.js",
+    "bulk-upload:excel": "node scripts/bulk-upload-excel.js",
     "setup": "npm run services:start && echo '\n🎯 Starting backend in 3 seconds...' && sleep 3 && npm start"
   },
   "keywords": [],

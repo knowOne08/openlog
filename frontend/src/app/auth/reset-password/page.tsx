@@ -2,8 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, CardHeader, Input, Button, Link } from "@/components/ui/heroui";
-import { CheckIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import AuthLayout from "@/components/auth/AuthLayout";
+import {
+  Alert,
+  Box,
+  Button,
+  Link as MuiLink,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { CheckCircle, ChevronLeft } from "@mui/icons-material";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -23,7 +32,7 @@ export default function ResetPasswordPage() {
       setToken(accessToken);
     } else {
       setError(
-        "Invalid or missing reset token. Please request a new password reset link."
+        "Invalid or missing reset token. Please request a new password reset link.",
       );
     }
   }, []);
@@ -46,7 +55,7 @@ export default function ResetPasswordPage() {
 
     if (!token) {
       setError(
-        "Invalid reset token. Please request a new password reset link."
+        "Invalid reset token. Please request a new password reset link.",
       );
       return;
     }
@@ -65,7 +74,7 @@ export default function ResetPasswordPage() {
             token,
             newPassword: password,
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -88,7 +97,7 @@ export default function ResetPasswordPage() {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to reset password. Please try again."
+          : "Failed to reset password. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -97,125 +106,117 @@ export default function ResetPasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardBody className="text-center space-y-6 p-8">
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-success-100">
-              <CheckIcon className="h-8 w-8 text-success-600" />
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-default-800">
-                Password Reset Successful
-              </h2>
-              <p className="text-sm text-default-600">
-                Your password has been successfully reset. You will be
-                redirected to the sign in page shortly.
-              </p>
-            </div>
-
-            <Link
-              href="/auth/signin"
-              className="inline-flex items-center text-sm text-primary"
-              underline="hover"
-            >
-              Go to sign in now
-            </Link>
-          </CardBody>
-        </Card>
-      </div>
+      <Box
+        sx={{ minHeight: "100vh", display: "grid", placeItems: "center", p: 2 }}
+      >
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: 480,
+            p: 4,
+            borderRadius: 4,
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
+            textAlign: "center",
+            boxShadow: 10,
+          }}
+        >
+          <CheckCircle sx={{ fontSize: 56, color: "success.main", mb: 2 }} />
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+            Password Reset Successful
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+            Your password has been successfully reset. You will be redirected to
+            the sign in page shortly.
+          </Typography>
+          <MuiLink component={Link} href="/auth/signin" underline="hover">
+            Go to sign in now
+          </MuiLink>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Left Panel - Reset Password Form */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full shadow-none">
-          <CardHeader className="flex flex-col items-center pb-0 pt-8">
-            <div className="text-4xl font-bold text-default-800 mb-4">*</div>
-            <h2 className="text-2xl font-bold text-default-800 text-center">
-              Set New Password
-            </h2>
-            <p className="text-sm text-default-600 text-center mt-2">
-              Enter your new password below.
-            </p>
-          </CardHeader>
-
-          <CardBody className="pt-6">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {error && (
-                <div className="bg-danger-50 border border-danger-200 text-danger-800 px-4 py-3 rounded-md text-sm">
-                  {error}
-                </div>
-              )}
-
-              <Input
-                type="password"
-                label="New Password"
-                variant="bordered"
-                value={password}
-                onValueChange={setPassword}
-                isRequired
-                suppressHydrationWarning
-                classNames={{
-                  input: "text-sm",
-                  label: "text-sm font-medium",
-                }}
-              />
-
-              <Input
-                type="password"
-                label="Confirm Password"
-                variant="bordered"
-                value={confirmPassword}
-                onValueChange={setConfirmPassword}
-                isRequired
-                suppressHydrationWarning
-                classNames={{
-                  input: "text-sm",
-                  label: "text-sm font-medium",
-                }}
-              />
-
-              <Button
-                type="submit"
-                color="default"
-                size="lg"
-                className="w-full bg-default-900 text-white font-medium"
-                isLoading={isLoading}
-                isDisabled={!token}
-              >
-                Reset Password
-              </Button>
-
-              <div className="text-center">
-                <Link
-                  href="/auth/signin"
-                  className="inline-flex items-center text-sm text-default-600"
-                  underline="hover"
-                >
-                  <ChevronLeftIcon className="h-4 w-4 mr-1" />
-                  Back to sign in
-                </Link>
-              </div>
-            </form>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Right Panel - Branding (optional, matches forgot-password page) */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary-100 to-secondary-100 items-center justify-center p-12">
-        <div className="max-w-md text-center space-y-6">
-          <div className="text-6xl font-bold text-default-800">*</div>
-          <h1 className="text-4xl font-bold text-default-800">
-            Secure Password Reset
-          </h1>
-          <p className="text-lg text-default-600">
-            Create a strong password to protect your account.
-          </p>
-        </div>
-      </div>
-    </div>
+    <AuthLayout
+      title="Set New Password"
+      subtitle="Enter your new password below."
+      showBackLink
+      backLinkHref="/auth/signin"
+      backLinkText="Back to sign in"
+      rightPanelContent={
+        <Box
+          sx={{
+            display: "grid",
+            placeItems: "center",
+            minHeight: 560,
+            px: 4,
+            textAlign: "center",
+          }}
+        >
+          <Box>
+            <Typography variant="h2" sx={{ mb: 2 }}>
+              *
+            </Typography>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
+              Secure Password Reset
+            </Typography>
+            <Typography variant="body1" sx={{ color: "text.secondary" }}>
+              Create a strong password to protect your account.
+            </Typography>
+          </Box>
+        </Box>
+      }
+    >
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}
+      >
+        {error && <Alert severity="error">{error}</Alert>}
+        <TextField
+          type="password"
+          label="New Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          fullWidth
+        />
+        <TextField
+          type="password"
+          label="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          fullWidth
+        />
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          size="large"
+          disabled={isLoading || !token}
+        >
+          Reset Password
+        </Button>
+        <Box sx={{ textAlign: "center" }}>
+          <MuiLink
+            component={Link}
+            href="/auth/signin"
+            underline="hover"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              fontSize: 14,
+            }}
+          >
+            <ChevronLeft fontSize="small" />
+            Back to sign in
+          </MuiLink>
+        </Box>
+      </Box>
+    </AuthLayout>
   );
 }

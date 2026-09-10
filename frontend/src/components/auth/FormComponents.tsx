@@ -1,9 +1,15 @@
 "use client";
 
-import { ReactNode } from "react";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
-import { LockClosedIcon } from "@heroicons/react/24/outline";
+import { ReactNode, useState } from "react";
+import {
+  Box,
+  Button as MuiButton,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 
 interface InputFieldProps {
   id: string;
@@ -29,22 +35,19 @@ export function InputField({
   className = "",
 }: InputFieldProps) {
   return (
-    <div>
-      <label htmlFor={id} className="sr-only">
-        {placeholder}
-      </label>
-      <input
-        id={id}
-        name={name}
-        type={type}
-        autoComplete={autoComplete}
-        required={required}
-        value={value}
-        onChange={onChange}
-        className={`appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm ${className}`}
-        placeholder={placeholder}
-      />
-    </div>
+    <TextField
+      id={id}
+      name={name}
+      type={type}
+      autoComplete={autoComplete}
+      required={required}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      size="small"
+      fullWidth
+      className={className}
+    />
   );
 }
 
@@ -70,35 +73,36 @@ export function PasswordField({
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div>
-      <label htmlFor={id} className="sr-only">
-        {placeholder}
-      </label>
-      <div className="relative">
-        <input
-          id={id}
-          name={name}
-          type={showPassword ? "text" : "password"}
-          autoComplete={autoComplete}
-          required={required}
-          value={value}
-          onChange={onChange}
-          className="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"
-          placeholder={placeholder}
-        />
-        <button
-          type="button"
-          className="absolute inset-y-0 right-0 pr-3 flex items-center"
-          onClick={() => setShowPassword(!showPassword)}
-        >
-          {showPassword ? (
-            <EyeSlashIcon className="h-5 w-5 text-gray-400" />
-          ) : (
-            <EyeIcon className="h-5 w-5 text-gray-400" />
-          )}
-        </button>
-      </div>
-    </div>
+    <TextField
+      id={id}
+      name={name}
+      type={showPassword ? "text" : "password"}
+      autoComplete={autoComplete}
+      required={required}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      size="small"
+      fullWidth
+      slotProps={{
+        input: {
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                onClick={() => setShowPassword(!showPassword)}
+                edge="end"
+              >
+                {showPassword ? (
+                  <VisibilityOff fontSize="small" />
+                ) : (
+                  <Visibility fontSize="small" />
+                )}
+              </IconButton>
+            </InputAdornment>
+          ),
+        },
+      }}
+    />
   );
 }
 
@@ -119,24 +123,18 @@ export function Button({
   variant = "primary",
   className = "",
 }: ButtonProps) {
-  const baseClasses =
-    "group relative w-full flex justify-center py-3 px-4 border text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed";
-
-  const variantClasses = {
-    primary: "border-transparent text-white bg-gray-800 hover:bg-gray-600",
-    secondary: "border-transparent text-teal-700 bg-teal-100 hover:bg-teal-200",
-    outline: "border-gray-300 text-gray-700 bg-white hover:bg-gray-50",
-  };
-
   return (
-    <button
+    <MuiButton
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      variant={variant === "outline" ? "outlined" : "contained"}
+      color={variant === "secondary" ? "secondary" : "primary"}
+      className={className}
+      fullWidth
     >
       {children}
-    </button>
+    </MuiButton>
   );
 }
 
@@ -153,38 +151,58 @@ export function SocialButton({
   disabled = false,
   children,
 }: SocialButtonProps) {
-  const getProviderIcon = () => {
-    if (provider === "google") {
-      return (
-        <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold mr-3">
-          G
-        </div>
-      );
-    }
-
-    if (provider === "microsoft") {
-      return (
-        <div className="w-5 h-5 grid grid-cols-2 gap-0.5 mr-3">
-          <div className="w-2 h-2 bg-red-500"></div>
-          <div className="w-2 h-2 bg-green-500"></div>
-          <div className="w-2 h-2 bg-blue-500"></div>
-          <div className="w-2 h-2 bg-yellow-500"></div>
-        </div>
-      );
-    }
-
-    return null;
-  };
+  const providerIcon =
+    provider === "google" ? (
+      <Box
+        sx={{
+          width: 20,
+          height: 20,
+          bgcolor: "#ea4335",
+          borderRadius: 999,
+          display: "grid",
+          placeItems: "center",
+          color: "white",
+          fontSize: 11,
+          fontWeight: 700,
+          mr: 1.5,
+        }}
+      >
+        G
+      </Box>
+    ) : (
+      <Box
+        sx={{
+          width: 20,
+          height: 20,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: 0.5,
+          mr: 1.5,
+        }}
+      >
+        <Box sx={{ width: 8, height: 8, bgcolor: "#f25022" }} />
+        <Box sx={{ width: 8, height: 8, bgcolor: "#7fba00" }} />
+        <Box sx={{ width: 8, height: 8, bgcolor: "#00a4ef" }} />
+        <Box sx={{ width: 8, height: 8, bgcolor: "#ffb900" }} />
+      </Box>
+    );
 
   return (
-    <button
+    <MuiButton
       onClick={onClick}
       disabled={disabled}
-      className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      variant="outlined"
+      fullWidth
+      sx={{
+        justifyContent: "center",
+        py: 1.5,
+        color: "text.primary",
+        borderColor: "divider",
+      }}
     >
-      {getProviderIcon()}
+      {providerIcon}
       {children}
-    </button>
+    </MuiButton>
   );
 }
 
@@ -194,14 +212,32 @@ interface SeparatorProps {
 
 export function Separator({ text = "or" }: SeparatorProps) {
   return (
-    <div className="relative">
-      <div className="absolute inset-0 flex items-center">
-        <div className="w-full border-t border-gray-300" />
-      </div>
-      <div className="relative flex justify-center text-sm">
-        <span className="px-2 bg-white text-gray-500">{text}</span>
-      </div>
-    </div>
+    <Box sx={{ position: "relative" }}>
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <Box sx={{ width: "100%", borderTop: 1, borderColor: "divider" }} />
+      </Box>
+      <Box
+        sx={{
+          position: "relative",
+          display: "flex",
+          justifyContent: "center",
+          fontSize: 14,
+        }}
+      >
+        <Box
+          sx={{ px: 1.5, bgcolor: "background.paper", color: "text.secondary" }}
+        >
+          {text}
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -211,11 +247,18 @@ interface ComplianceInfoProps {
 
 export function ComplianceInfo({ className = "" }: ComplianceInfoProps) {
   return (
-    <div
-      className={`flex items-center justify-center text-xs text-gray-500 ${className}`}
+    <Typography
+      variant="caption"
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "text.secondary",
+      }}
+      className={className}
     >
-      <LockClosedIcon className="h-4 w-4 mr-1" />
+      <Lock sx={{ fontSize: 16, mr: 0.5 }} />
       GDPR compliant. ISO-27001 certified.
-    </div>
+    </Typography>
   );
 }

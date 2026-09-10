@@ -2,8 +2,8 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { Button } from "@heroui/react";
-import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
+import { IconButton, Tooltip } from "@mui/material";
+import { DarkMode, LightMode } from "@mui/icons-material";
 
 export function ThemeSwitcher() {
   const [mounted, setMounted] = useState(false);
@@ -20,19 +20,26 @@ export function ThemeSwitcher() {
   };
 
   return (
-    <Button
-      onPress={toggleTheme}
-      size="sm"
-      variant="ghost"
-      className="bg-foreground text-background hover:bg-foreground/90"
-      aria-label="Toggle dark mode"
-      style={{ minWidth: "40px", minHeight: "40px", borderRadius: "50%" }}
-    >
-      {theme === "dark" ? (
-        <SunIcon className="w-5 h-5 text-yellow-500" />
-      ) : (
-        <MoonIcon className="w-5 h-5 text-blue-100" />
-      )}
-    </Button>
+    <Tooltip title="Toggle theme">
+      <IconButton
+        onClick={toggleTheme}
+        aria-label="Toggle dark mode"
+        sx={{
+          width: 44,
+          height: 44,
+          bgcolor: "background.paper",
+          color: "text.primary",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: 4,
+          "&:hover": {
+            bgcolor: "action.hover",
+            borderColor: "text.primary",
+          },
+        }}
+      >
+        {theme === "dark" ? <LightMode /> : <DarkMode />}
+      </IconButton>
+    </Tooltip>
   );
 }

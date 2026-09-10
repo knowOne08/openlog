@@ -2,6 +2,7 @@
 import "./globals.css";
 import { Providers } from "./providers";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { Box } from "@mui/material";
 
 export default function RootLayout({
   children,
@@ -10,12 +11,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="text-foreground bg-background relative min-h-screen">
+      <body className="relative min-h-screen">
         <Providers>
-          {children}
-          <div className="fixed bottom-4 right-4 z-50">
+          <Box
+            sx={{
+              minHeight: "100vh",
+              color: "text.primary",
+              bgcolor: "background.default",
+            }}
+          >
+            {children}
+          </Box>
+          <Box
+            sx={{
+              position: "fixed",
+              bottom: 16,
+              right: 16,
+              zIndex: 1300,
+            }}
+          >
             <ThemeSwitcher />
-          </div>
+          </Box>
         </Providers>
       </body>
     </html>

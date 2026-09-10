@@ -2,8 +2,17 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Card, Input, Button, Link, Label } from "@heroui/react";
-import { ChevronLeftIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import AuthLayout from "@/components/auth/AuthLayout";
+import {
+  Alert,
+  Box,
+  Button,
+  Link as MuiLink,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { ChevronLeft, MarkEmailRead } from "@mui/icons-material";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -49,119 +58,126 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <div className="text-center space-y-6 p-8">
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full">
-              <EnvelopeIcon className="h-8 w-8 text-success-600" />
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-default-800">
-                Check your email
-              </h2>
-              <p className="text-sm text-default-600">
-                We&apos;ve sent a password reset link to{" "}
-                <span className="font-semibold">{email}</span>
-              </p>
-            </div>
-
-            <p className="text-xs text-default-500">
-              Didn&apos;t receive the email? Check your spam folder or{" "}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-0 h-auto min-w-0 text-primary underline"
-                onPress={() => setIsSubmitted(false)}
-              >
-                try again
-              </Button>
-            </p>
-
-            <div className="border-t border-divider"></div>
-
-            <Link
-              href="/auth/signin"
-              className="inline-flex items-center text-sm text-primary hover:underline"
+      <Box
+        sx={{ minHeight: "100vh", display: "grid", placeItems: "center", p: 2 }}
+      >
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: 480,
+            p: 4,
+            borderRadius: 4,
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
+            textAlign: "center",
+            boxShadow: 10,
+          }}
+        >
+          <MarkEmailRead sx={{ fontSize: 56, color: "success.main", mb: 2 }} />
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+            Check your email
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+            We&apos;ve sent a password reset link to{" "}
+            <Box component="span" sx={{ fontWeight: 700 }}>
+              {email}
+            </Box>
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{ color: "text.secondary", display: "block", mb: 3 }}
+          >
+            Didn&apos;t receive the email? Check your spam folder or{" "}
+            <Button
+              variant="text"
+              onClick={() => setIsSubmitted(false)}
+              sx={{ p: 0, minWidth: 0, textDecoration: "underline" }}
             >
-              <ChevronLeftIcon className="h-4 w-4 mr-1" />
-              Back to sign in
-            </Link>
-          </div>
-        </Card>
-      </div>
+              try again
+            </Button>
+          </Typography>
+          <MuiLink
+            component={Link}
+            href="/auth/signin"
+            underline="hover"
+            sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}
+          >
+            <ChevronLeft fontSize="small" />
+            Back to sign in
+          </MuiLink>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Left Panel - Authentication Form */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full shadow-none">
-          <div className="flex flex-col items-center pb-0 pt-8 px-8">
-            <div className="text-4xl font-bold text-default-800 mb-4">*</div>
-            <h2 className="text-2xl font-bold text-default-800 text-center">
-              Reset your password
-            </h2>
-            <p className="text-sm text-default-600 text-center mt-2">
-              Enter your email address and we&apos;ll send you a link to reset
-              your password.
-            </p>
-          </div>
-
-          <div className="pt-6 px-8 pb-8">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {error && (
-                <div className="bg-danger-50 border border-danger-200 text-danger-800 px-4 py-3 rounded-md text-sm">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  suppressHydrationWarning
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full bg-foreground text-white font-medium"
-                isDisabled={isLoading}
-                variant="primary"
-              >
-                {isLoading ? "Sending..." : "Send reset link"}
-              </Button>
-            </form>
-
-            <div className="text-center mt-5">
-              <Link
-                href="/auth/signin"
-                className="inline-flex items-center text-sm text-default-600 hover:underline"
-              >
-                <ChevronLeftIcon className="h-4 w-4 mr-1" />
-                Back to sign in
-              </Link>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Right Panel - Image Placeholder */}
-      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-content1">
-        <Image
-          src="/images/hero_image.jpg"
-          alt="Hero Image"
-          fill
-          className="object-cover"
+    <AuthLayout
+      title="Reset your password"
+      subtitle="Enter your email address and we'll send you a link to reset your password."
+      showBackLink
+      backLinkHref="/auth/signin"
+      backLinkText="Back to sign in"
+      rightPanelContent={
+        <Box
+          sx={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            minHeight: 560,
+          }}
+        >
+          <Image
+            src="/images/hero_image.jpg"
+            alt="Hero Image"
+            fill
+            className="object-cover"
+          />
+        </Box>
+      }
+    >
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}
+      >
+        {error && <Alert severity="error">{error}</Alert>}
+        <TextField
+          id="email"
+          type="email"
+          label="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter your email"
+          autoComplete="email"
+          fullWidth
         />
-      </div>
-    </div>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={isLoading}
+          fullWidth
+          size="large"
+        >
+          {isLoading ? "Sending..." : "Send reset link"}
+        </Button>
+        <Box sx={{ textAlign: "center" }}>
+          <MuiLink
+            component={Link}
+            href="/auth/signin"
+            underline="hover"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              fontSize: 14,
+            }}
+          >
+            <ChevronLeft fontSize="small" />
+            Back to sign in
+          </MuiLink>
+        </Box>
+      </Box>
+    </AuthLayout>
   );
 }

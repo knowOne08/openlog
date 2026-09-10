@@ -18,7 +18,7 @@ import {
   Label,
   ListBoxItem,
   ListBox,
-} from "@heroui/react";
+} from "@/components/ui/mui";
 
 interface UploadResult {
   id: string;

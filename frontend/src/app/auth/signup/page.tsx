@@ -6,8 +6,17 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useRedirectIfAuthenticated } from "@/hooks/useAuth";
-import { Card, Input, Button, Label } from "@heroui/react";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import AuthLayout from "@/components/auth/AuthLayout";
+import {
+  Alert,
+  Box,
+  Button,
+  IconButton,
+  InputAdornment,
+  Link as MuiLink,
+  TextField,
+} from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -59,162 +68,113 @@ export default function SignUpPage() {
   // };
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Left Panel - Authentication Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full">
-          <Card className="p-6 relative overflow-hidden shadow-none">
-            <div className="space-y-6 relative z-10">
-              {/* Header */}
-              <div className="text-center space-y-2">
-                <div className="text-4xl font-bold text-foreground mb-4">*</div>
-                <h2 className="text-2xl font-bold text-foreground">
-                  Let&apos;s get started
-                </h2>
-                <p className="text-sm text-foreground-500">
-                  A Window to your new World.
-                </p>
-              </div>
+    <AuthLayout
+      title="Let's get started"
+      subtitle="A Window to your new World."
+      rightPanelContent={
+        <Box
+          sx={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            minHeight: 560,
+          }}
+        >
+          <Image
+            src="/images/hero_image.jpg"
+            alt="Hero Image"
+            fill
+            className="object-cover"
+          />
+        </Box>
+      }
+    >
+      <Box
+        component="form"
+        onSubmit={handleSignUp}
+        sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}
+      >
+        {error && <Alert severity="error">{error}</Alert>}
 
-              {/* Social Sign-up Buttons - Commented out as in original */}
-              {/* 
-              <div className="space-y-3">
-                <Button
-                  variant="bordered"
-                  className="w-full"
-                  startContent={<GoogleIcon />}
-                  onPress={handleGoogleSignUp}
-                  isDisabled={isLoading}
-                >
-                  Sign up with Google
-                </Button>
-                
-                <Button
-                  variant="bordered"
-                  className="w-full"
-                  startContent={<MicrosoftIcon />}
-                  onPress={handleMicrosoftSignUp}
-                  isDisabled={isLoading}
-                >
-                  Sign up with Microsoft
-                </Button>
-              </div>
-              
-              <Divider className="my-4" />
-              */}
-
-              {/* Sign-up Form */}
-              <form onSubmit={handleSignUp} className="space-y-4">
-                {/* Error Display */}
-                {error && (
-                  <div className="rounded-md bg-danger-50 border border-danger-200 py-2 px-3">
-                    <p className="text-sm text-danger-600">{error}</p>
-                  </div>
-                )}
-
-                {/* Full Name Input */}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="fullname">Full Name</Label>
-                  <Input
-                    id="fullname"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter your full name"
-                    autoComplete="name"
-                    suppressHydrationWarning
-                  />
-                </div>
-
-                {/* Email Input */}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    autoComplete="email"
-                    suppressHydrationWarning
-                  />
-                </div>
-
-                {/* Password Input */}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      autoComplete="new-password"
-                      suppressHydrationWarning
-                      type={isPasswordVisible ? "text" : "password"}
-                      className="flex-1"
-                    />
-                    <button
-                      className="focus:outline-none"
-                      type="button"
-                      onClick={togglePasswordVisibility}
-                      aria-label="toggle password visibility"
-                      suppressHydrationWarning
-                    >
-                      {isPasswordVisible ? (
-                        <EyeSlashIcon className="h-5 w-5 text-default-400 pointer-events-none" />
-                      ) : (
-                        <EyeIcon className="h-5 w-5 text-default-400 pointer-events-none" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  className="w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
-                  isDisabled={isLoading}
-                >
-                  {isLoading ? "Signing up..." : "Sign up"}
-                </Button>
-              </form>
-
-              {/* Footer Links */}
-              <div className="text-center space-y-2 text-sm text-foreground-600">
-                <div>
-                  By signing up, I agree to OpenLog&apos;s{" "}
-                  <Link
-                    href="/terms"
-                    className="text-foreground-600 hover:text-foreground-800 underline"
-                  >
-                    Terms & Privacy Policy
-                  </Link>
-                </div>
-                <div>
-                  Already have an account?{" "}
-                  <Link
-                    href="/auth/signin"
-                    className="text-foreground-600 hover:text-foreground-800 underline"
-                  >
-                    Sign in
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* Right Panel - Hero Image */}
-      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-content1">
-        <Image
-          src="/images/hero_image.jpg"
-          alt="Hero Image"
-          fill
-          className="object-cover"
+        <TextField
+          id="fullname"
+          type="text"
+          label="Full Name"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="Enter your full name"
+          autoComplete="name"
+          fullWidth
         />
-      </div>
-    </div>
+        <TextField
+          id="email"
+          type="email"
+          label="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter your email"
+          autoComplete="email"
+          fullWidth
+        />
+        <TextField
+          id="password"
+          type={isPasswordVisible ? "text" : "password"}
+          label="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter your password"
+          autoComplete="new-password"
+          fullWidth
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={togglePasswordVisibility}
+                    edge="end"
+                    aria-label="toggle password visibility"
+                  >
+                    {isPasswordVisible ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={isLoading}
+          fullWidth
+          size="large"
+        >
+          {isLoading ? "Signing up..." : "Sign up"}
+        </Button>
+
+        <Box
+          sx={{
+            textAlign: "center",
+            fontSize: 14,
+            color: "text.secondary",
+            display: "grid",
+            gap: 1,
+          }}
+        >
+          <Box>
+            By signing up, I agree to OpenLog&apos;s{" "}
+            <MuiLink component={Link} href="/terms" underline="hover">
+              Terms &amp; Privacy Policy
+            </MuiLink>
+          </Box>
+          <Box>
+            Already have an account?{" "}
+            <MuiLink component={Link} href="/auth/signin" underline="hover">
+              Sign in
+            </MuiLink>
+          </Box>
+        </Box>
+      </Box>
+    </AuthLayout>
   );
 }

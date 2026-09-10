@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import {
+  Box,
   Button,
-  Input,
-  Label,
-  ListBoxItem,
-  Modal,
-  Select,
-} from "@heroui/react";
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
+  TextField,
+  Alert,
+} from "@mui/material";
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -65,94 +68,69 @@ export default function AddUserModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={!isOpen ? onClose : undefined}>
-      <div className="flex flex-col gap-6 p-6">
-        <div className="flex flex-col gap-1">
-          <span className="text-lg font-semibold text-foreground">
-            Add New User
-          </span>
-          <span className="text-sm text-foreground-500">
+    <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Add New User</DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box sx={{ color: "text.secondary", fontSize: 14 }}>
             Create a new organization member from the admin dashboard.
-          </span>
-        </div>
-        <div className="flex flex-col gap-4">
-          {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900 dark:text-red-200">
-              {error}
-            </div>
-          )}
+          </Box>
+          {error && <Alert severity="error">{error}</Alert>}
           {success && (
-            <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 dark:border-green-800 dark:bg-green-900 dark:text-green-200">
-              User added successfully!
-            </div>
+            <Alert severity="success">User added successfully!</Alert>
           )}
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEmail(e.target.value)
-              }
-              type="email"
-              placeholder="user@example.com"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setName(e.target.value)
-              }
-              placeholder="Full Name"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="role">Role</Label>
-            <Select
-              id="role"
-              selectedKey={role}
-              onChange={(e) => {
-                if (e && e !== null) {
-                  setRole((e as unknown as "admin" | "member") || "member");
-                }
-              }}
-            >
-              <ListBoxItem key="admin" id="admin" textValue="Admin">
-                Admin
-              </ListBoxItem>
-              <ListBoxItem key="member" id="member" textValue="Member">
-                Member
-              </ListBoxItem>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="team">Team</Label>
-            <Input
-              id="team"
-              value={team}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setTeam(e.target.value)
-              }
-              placeholder="Team name (optional)"
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button onPress={onClose} variant="outline">
-            Cancel
-          </Button>
-          <Button
-            onPress={handleAddUser}
-            isDisabled={loading}
-            className="bg-foreground text-background"
+          <TextField
+            id="email"
+            value={email}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setEmail(e.target.value)
+            }
+            type="email"
+            label="Email"
+            placeholder="user@example.com"
+            fullWidth
+          />
+          <TextField
+            id="name"
+            value={name}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setName(e.target.value)
+            }
+            label="Name"
+            placeholder="Full Name"
+            fullWidth
+          />
+          <TextField
+            id="role"
+            select
+            label="Role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as "admin" | "member")}
+            fullWidth
           >
-            {loading ? "Adding..." : "Add User"}
-          </Button>
-        </div>
-      </div>
-    </Modal>
+            <MenuItem value="admin">Admin</MenuItem>
+            <MenuItem value="member">Member</MenuItem>
+          </TextField>
+          <TextField
+            id="team"
+            value={team}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setTeam(e.target.value)
+            }
+            label="Team"
+            placeholder="Team name (optional)"
+            fullWidth
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} variant="outlined">
+          Cancel
+        </Button>
+        <Button onClick={handleAddUser} disabled={loading} variant="contained">
+          {loading ? "Adding..." : "Add User"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

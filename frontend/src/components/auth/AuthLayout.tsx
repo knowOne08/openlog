@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
+import { Box, Link as MuiLink, Paper, Typography } from "@mui/material";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -23,62 +24,105 @@ export default function AuthLayout({
   backLinkText = "Back to sign in",
 }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left Panel - Authentication Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-sm">
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-teal-800">OpenLog</h1>
-            <h2 className="mt-6 text-2xl font-bold text-teal-800">{title}</h2>
-            <p className="mt-2 text-sm text-gray-600">{subtitle}</p>
-          </div>
+    <Box sx={{ minHeight: "100vh", display: "flex" }}>
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          px: { xs: 2, sm: 3, lg: 6 },
+          py: 4,
+        }}
+      >
+        <Paper
+          elevation={12}
+          sx={{
+            width: "100%",
+            maxWidth: 520,
+            p: { xs: 3, sm: 4 },
+            borderRadius: 1,
+            backgroundColor: "background.paper",
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Box sx={{ textAlign: "center", mb: 4 }}>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 800 }}>
+              OpenLog
+            </Typography>
+            <Typography variant="h5" component="h2" sx={{ mt: 2, fontWeight: 700 }}>
+              {title}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
+              {subtitle}
+            </Typography>
+          </Box>
 
-          {/* Form Content */}
           {children}
-        </div>
-      </div>
+        </Paper>
+      </Box>
 
-      {/* Right Panel - Illustrative & Marketing Content */}
-      <div className="hidden lg:flex lg:flex-1 bg-blue-50 flex-col justify-center px-8">
-        {/* Navigation Link */}
+      <Box
+        sx={{
+          flex: 1,
+          display: { xs: "none", lg: "flex" },
+          flexDirection: "column",
+          justifyContent: "center",
+          px: 6,
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: "#1D1C19",
+          color: "#FDFCFA",
+        }}
+      >
         {showBackLink && (
-          <div className="text-right mb-8">
-            <Link
+          <Box sx={{ textAlign: "right", mb: 6 }}>
+            <MuiLink
+              component={Link}
               href={backLinkHref}
-              className="text-teal-600 hover:text-teal-500 font-medium underline"
+              underline="hover"
+              sx={{ color: "#D3D2CD", fontWeight: 600 }}
             >
               {backLinkText}
-            </Link>
-          </div>
+            </MuiLink>
+          </Box>
         )}
 
-        {/* Custom Right Panel Content or Default */}
         {rightPanelContent || (
-          <>
-            {/* Default Illustration */}
-            <div className="flex justify-center mb-8">
-              <div className="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <div className="text-6xl mb-2">🏄‍♂️</div>
-                  <p className="text-sm">Searching together</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Trusted by Section */}
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-4">trusted by</p>
-              <div className="flex justify-center space-x-8">
-                <div className="text-gray-400 font-semibold">Google</div>
-                <div className="text-gray-400 font-semibold">Uber</div>
-                <div className="text-gray-400 font-semibold">MIRAKL</div>
-                <div className="text-gray-400 font-semibold">spendesk</div>
-              </div>
-            </div>
-          </>
+          <Box sx={{ textAlign: "center", color: "#FDFCFA" }}>
+            <Box
+              sx={{
+                mx: "auto",
+                mb: 4,
+                width: 320,
+                height: 320,
+                borderRadius: 1,
+                backgroundColor: "rgba(255,255,255,0.08)",
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="h2" sx={{ mb: 1 }}>
+                  🏄‍♂️
+                </Typography>
+                <Typography variant="body2">Searching together</Typography>
+              </Box>
+            </Box>
+            <Typography variant="overline" sx={{ letterSpacing: 4, opacity: 0.7 }}>
+              trusted by
+            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 4, mt: 2 }}>
+              {['Google', 'Uber', 'MIRAKL', 'spendesk'].map((brand) => (
+                <Typography key={brand} variant="subtitle2" sx={{ opacity: 0.65, fontWeight: 700 }}>
+                  {brand}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
